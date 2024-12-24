@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'myapp/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'myapp/login.css' %}">
+{% endblock %}
+
+{% block content %}
+    <body>
+    <div class="login-container">
+            <h1>Login</h1>
+            <form action="/login/" method="post">
+                {% csrf_token %}
+                <input type="text" name="username" placeholder="Username/Email">
+                <input type="password" name="password" placeholder="Password">
+                <input type="submit" value="Login">
+        
+    </div>
+    </body>
+ 
+{% endblock %}

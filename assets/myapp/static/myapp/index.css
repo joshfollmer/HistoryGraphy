@@ -1,14 +1,40 @@
 /* Banner Styles */
 .banner {
-    background-color: #007bff; /* Banner background color */
+    background-color: rgba(0, 128, 128, 0.932); /* Banner background color */
     color: white; /* Text color */
-    padding: 20px 0; /* Vertical spacing */
-    text-align: center; /* Center the text */
+    padding: 10px 0; /* Vertical spacing */
+    text-align: left; /* Center the text */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
 }
+
+/* Flexbox container for banner content */
+.banner-content {
+    display: flex;
+    align-items: center; /* Vertically align text and button */
+    gap: 20px; /* Add spacing between text and button */
+    margin-left: 20px;
+}
+
 
 .banner h1 {
     margin: 0; /* Remove default margin */
     color: white;
     font-size: 28px; /* Adjust font size */
+    text-align: left;
+}
+
+/* Button stlye */
+
+.create-button {
+    background-color: white; 
+    border: none; /* Remove border */
+    color:rgba(0, 128, 128, 0.932); ; /* Blue text */
+    padding: 15px 32px; /* Padding around text */
+    text-align: center; /* Center text */
+    text-decoration: none; /* Remove underline */
+    display: inline-block; /* Display as inline block */
+    font-size: 16px; /* Font size */
+    margin: 4px 2px; /* Margin around button */
+    cursor: pointer; /* Cursor on hover */
+    border-radius: 8px; /* Rounded corners */
 }
