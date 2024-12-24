@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'myapp/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'myapp/index.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class ="banner">
+        <h1>Your Projects</h1>
+    </div>
+    <div class="main-content">
+        <h1>Welcome to HistoryGraphy</h1>
+        <p>This is the homepage of your new Django website. Enjoy exploring!</p>
+    </div>
+{% endblock %}

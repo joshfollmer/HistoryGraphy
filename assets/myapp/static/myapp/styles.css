@@ -1,0 +1,74 @@
+/* Global Styles - shared across all pages */
+
+/* Set body font, color, and background */
+body {
+    font-family: Arial, sans-serif;
+    color: #333;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+/* Header Styles */
+h1 {
+    color: #007bff;
+    font-size: 36px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Main content area styling */
+.main-content {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Paragraph Styles */
+p {
+    font-size: 18px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Add some spacing between sections */
+.main-content p {
+    margin-bottom: 20px;
+}
+
+/* Navbar Styles */
+nav {
+    background-color: #333; /* Dark background for contrast */
+    padding: 20px;
+    display: flex; /* Use flexbox to align items */
+    justify-content: space-between; /* Separate items on left and right */
+    align-items: center; /* Vertically center items */
+}
+
+nav ul {
+    list-style-type: none; /* Remove default bullet points */
+    margin: 0;
+    padding: 0;
+    display: flex; /* Display items in a row */
+    gap: 15px; /* Add space between items */
+}
+
+/* Align the Login button to the right */
+nav .right {
+    margin-left: auto; /* Push it to the far right */
+}
+
+nav ul li a {
+    text-decoration: none; /* Remove underline from links */
+    color: white; /* White text for contrast */
+    font-size: 24px; /* Font size for readability */
+    transition: color 0.3s; /* Smooth color transition for hover effect */
+}
+
+nav ul li a:hover {
+    color: #007bff; /* Change color on hover */
+}
+

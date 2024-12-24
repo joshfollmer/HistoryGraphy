@@ -1,0 +1,34 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HistoryGraphy{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'myapp/styles.css' %}">
+    {% block extra_css %}
+    {% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="/">HistoryGraphy</a></li>
+            </ul>
+            <ul class="right">
+                <li><a href="/login/">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <!-- <footer>
+        <p>&copy; 2024 HistoryGraphy. All rights reserved.</p>
+    </footer> -->
+</body>
+</html>

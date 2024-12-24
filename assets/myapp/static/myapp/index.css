@@ -1,0 +1,14 @@
+/* Banner Styles */
+.banner {
+    background-color: #007bff; /* Banner background color */
+    color: white; /* Text color */
+    padding: 20px 0; /* Vertical spacing */
+    text-align: center; /* Center the text */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+}
+
+.banner h1 {
+    margin: 0; /* Remove default margin */
+    color: white;
+    font-size: 28px; /* Adjust font size */
+}
