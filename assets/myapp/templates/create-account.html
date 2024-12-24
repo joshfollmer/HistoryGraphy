@@ -1,26 +1,28 @@
 {% extends 'base.html' %}
 {% load static %}
 
-
-
-
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'myapp/styles.css' %}">
     <link rel="stylesheet" href="{% static 'myapp/login.css' %}">
 {% endblock %}
 
 {% block content %}
-    <body>
+<body>
     <div class="login-container">
-            <h1>Create Account</h1>
-            <form action="/login/" method="post">
-                {% csrf_token %}
-                <input type="text" name="username" placeholder="Username/Email">
-                <input type="text" name="username" placeholder="Email">
-                <input type="password" name="password" placeholder="Password">
-                <input type="submit" value="Create Account">
+        <h1>Create Account</h1>
+        <form action="/create-account/" method="post">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Username" value="{{ request.POST.username }}">
+            <input type="email" name="email" placeholder="Email" value="{{ request.POST.email }}">
+            <input type="password" name="password" placeholder="Password">
+            <input type="submit" value="Create Account">
+        </form>
         
+        {% if error_message %}
+            <div class="error-message" style="color: red;">
+                {{ error_message }}
+            </div>
+        {% endif %}
     </div>
-    </body>
- 
+</body>
 {% endblock %}

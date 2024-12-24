@@ -1,8 +1,10 @@
 /* Apply background color to the entire page */
-
+main {
+    padding-top: 120px;
+}
 
 body {
-    background-color: rgba(0, 128, 128, 0.932); /* Change this to the desired background color for the whole page */
+    background-color: rgba(0, 128, 128, 0.932); /* Background color for the page */
 }
 
 /* Style the login container (if needed) */
@@ -11,14 +13,14 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    padding: 20px; /* Optional: Padding for container */
-    background-color: white; /* Set background color for the login form */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add shadow to form */
-    border-radius: 10px; /* Optional: Rounded corners */
-    width: 100%; /* Adjust based on desired form width */
-    max-width: 400px; /* Optional: Limit max width of form */
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
     min-height: 350px;
-    margin: 0 auto; /* Center the form horizontally */
+    margin: 0 auto;
 }
 
 /* Style the form inside the login container */
@@ -32,36 +34,38 @@ body {
 
 /* Style the input fields */
 .login-container input[type="text"],
-.login-container input[type="password"] {
+.login-container input[type="password"],
+.login-container input[type="email"] { /* Added email field */
     width: 80%; /* Adjust the input width */
-    padding: 12px; /* Add more padding for a better look */
+    padding: 12px; /* Padding for better look */
     box-sizing: border-box;
-    border: 1px solid #ccc; /* Light border for input fields */
+    border: 1px solid #ccc; /* Light border */
     border-radius: 8px; /* Rounded corners */
-    font-size: 16px; /* Make the text a bit larger */
+    font-size: 16px; /* Larger font size */
     transition: all 0.3s ease; /* Smooth transition for focus */
 }
 
 /* Style the input fields when focused */
 .login-container input[type="text"]:focus,
-.login-container input[type="password"]:focus {
-    border-color: #007bff; /* Change border color on focus */
+.login-container input[type="password"]:focus,
+.login-container input[type="email"]:focus { /* Added email field focus */
+    border-color: #007bff; /* Blue border on focus */
     outline: none; /* Remove default outline */
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4); /* Add glow effect */
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.4); /* Glow effect on focus */
 }
 
 /* Style the submit button */
 .login-container input[type="submit"] {
-    width: 80%; /* Adjust the button width */
-    padding: 12px; /* Same padding as input fields */
+    width: 80%;
+    padding: 12px;
     box-sizing: border-box;
-    border: none; /* Remove default border */
-    background-color: #007bff; /* Button background color */
-    color: white; /* Text color */
-    font-size: 18px; /* Larger font size */
-    border-radius: 8px; /* Rounded corners */
-    cursor: pointer; /* Change cursor to pointer */
-    transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition */
+    border: none;
+    background-color: #007bff;
+    color: white;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
 /* Hover effect for the submit button */
@@ -76,10 +80,3 @@ body {
     flex-direction: column;
     gap: 15px; /* Space between form elements */
 }
-
-/* Optional: Add some padding inside the form */
-.login-container {
-    padding: 25px;
-}
-
-

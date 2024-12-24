@@ -2,9 +2,12 @@
 .banner {
     background-color: rgba(0, 128, 128, 0.932); /* Banner background color */
     color: white; /* Text color */
-    padding: 10px 0; /* Vertical spacing */
+    min-height: 60px;
     text-align: left; /* Center the text */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+    width: 100%;
+    display: flex;
+    align-items: center;
 }
 
 /* Flexbox container for banner content */

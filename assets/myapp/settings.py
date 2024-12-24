@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from pymongo import MongoClient
 
 
 load_dotenv()
@@ -79,12 +80,28 @@ WSGI_APPLICATION = 'myapp.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
+MONGO_CONNECTION_STRING = os.getenv("CONNECTION_STRING")
+
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'djongo',
+        'NAME': 'UserBase',  # Your database name
+        'CLIENT': {
+            'host': MONGO_CONNECTION_STRING,  # MongoDB Atlas connection string
+        }
     }
 }
+
+
+
+
+
+# Connect to MongoDB
+MONGO_CLIENT = MongoClient(MONGO_CONNECTION_STRING)
+MONGO_DB = MONGO_CLIENT['UserBase']
+MONGO_COLLECTION = MONGO_DB['users'] 
 
 
 # Password validation
