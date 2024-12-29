@@ -12,8 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from dotenv import load_dotenv
 from pathlib import Path
-from pymongo import MongoClient
-
+from supabase import create_client, Client
 
 load_dotenv()
 
@@ -81,16 +80,20 @@ WSGI_APPLICATION = 'myapp.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-MONGO_CONNECTION_STRING = os.getenv("CONNECTION_STRING")
+# Supabase configuration - retrieve URL and key from environment variables
+SUPABASE_URL = os.getenv('SUPABASE_URL')  
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')  
+
 
 
 DATABASES = {
     'default': {
-        'ENGINE': 'djongo',
-        'NAME': 'UserBase',  # Your database name
-        'CLIENT': {
-            'host': MONGO_CONNECTION_STRING,  # MongoDB Atlas connection string
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',  
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': "aws-0-us-west-1.pooler.supabase.com",
+        'PORT': 6543,
     }
 }
 
@@ -98,10 +101,6 @@ DATABASES = {
 
 
 
-# Connect to MongoDB
-MONGO_CLIENT = MongoClient(MONGO_CONNECTION_STRING)
-MONGO_DB = MONGO_CLIENT['UserBase']
-MONGO_COLLECTION = MONGO_DB['users'] 
 
 
 # Password validation
@@ -113,6 +112,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+                'OPTIONS': {
+            'min_length': 8,
+        },
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

@@ -91,3 +91,66 @@ nav ul li a:hover {
     color: #007bff; /* Change color on hover */
 }
 
+/* Hide the modal and overlay by default */
+.modal,
+.modal-overlay {
+    display: none;
+}
+
+/* Show modal and overlay when the checkbox is checked */
+#profile-modal:checked ~ .modal,
+#profile-modal:checked ~ .modal-overlay {
+    display: block;
+}
+
+/* Styling for the overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* Styling for the modal */
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 300px;
+    text-align: center;
+}
+
+/* Profile icon adjustments */
+.user-icon {
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+/* Styling for the modal close button */
+.modal-close {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background-color: #0056b3;
+}
+
+
