@@ -97,7 +97,11 @@ DATABASES = {
     }
 }
 
+NEO4J_DATABASE = {
+    'default': {
 
+    }
+}
 
 
 
