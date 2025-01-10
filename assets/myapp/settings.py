@@ -10,11 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from pathlib import Path
-from supabase import create_client, Client
 
-load_dotenv()
+
+load_dotenv(find_dotenv())
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,13 +43,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myapp',
+    
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -86,6 +87,7 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -94,14 +96,18 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': "aws-0-us-west-1.pooler.supabase.com",
         'PORT': 6543,
+
+    },
+    'neo4j': {
+        'ENGINE': None, 
+        'NAME': 'graph',
+        'URL' : os.getenv('NEO4J_URI'),
+        'USER' : os.getenv('NEO4J_USERNAME'),
+        'PASSWORD' : os.getenv('NEO4J_PASSWORD')
     }
 }
 
-NEO4J_DATABASE = {
-    'default': {
 
-    }
-}
 
 
 
@@ -155,6 +161,13 @@ STATIC_URL = '/static/'  # URL to access static files in development
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# For development only
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']
 
 
 

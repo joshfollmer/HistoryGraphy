@@ -41,3 +41,65 @@
     cursor: pointer; /* Cursor on hover */
     border-radius: 8px; /* Rounded corners */
 }
+
+
+
+
+.projects-list ul {
+    display: flex;                /* This can be used if you want to control the ul as a flex container */
+    flex-wrap: wrap;              /* Allow wrapping of items inside the ul */
+    padding: 0;                   /* Remove padding */
+    margin: 20px;                    /* Remove margin */
+    list-style-type: none;        /* Remove default list bullets */
+    width: 100%;                  /* Make sure the ul stretches to the full width */
+}
+
+/* Project item style */
+.projects-list li {
+    list-style-type: none;
+    width: 200px; /* Fixed width for each project card */
+    height: 200px; /* Fixed height for each project card */
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column; /* Stack content vertically inside each card */
+    align-items: center;
+    justify-content: flex-start;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin: 20px; 
+    padding-top: 20px;
+}
+
+/* Project item hover effect */
+.projects-list li:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Project name styles */
+.projects-list li p {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+
+
+.project-card .name {
+    width: 100%;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.project-card .small-square {
+    width: 80%;
+    height: 70%;
+    background-color: #b0c4de;
+    border-radius: 8px;
+}
+

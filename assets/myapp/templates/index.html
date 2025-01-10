@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
 
-
-
-
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'myapp/styles.css' %}">
     <link rel="stylesheet" href="{% static 'myapp/index.css' %}">
@@ -16,10 +13,27 @@
             <div class="create-button">New</div>
         </div>
     </div>
+    
     <main>
-    <div class="main-content">
-        <h1>Welcome to HistoryGraphy</h1>
-        <p>This is the homepage of your new Django website. Enjoy exploring!</p>
-    </div>
-</main>
+        <div class="main-content">
+            <!-- Loop through the projects and display them -->
+            <div class="projects-list">
+                {% if projects %}
+                    <ul>
+                        {% for project in projects %}
+                            <li class="project-card">
+                                <div class="name">
+                                    <p>{{ project.name }}</p>
+                                </div>
+                                <div class="small-square"></div> <!-- The small square with a solid color -->
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                <h1>Welcome to HistoryGraphy</h1>
+                    <p>No projects found. Start by creating one!</p>
+                {% endif %}
+            </div>
+        </div>
+    </main>
 {% endblock %}
