@@ -1,6 +1,6 @@
 Instructions to get started
 
-Create virtual environment if not already created
+Create virtual environment if not already created__
 python3 -m venv venv
 
 Activate virtual environment
