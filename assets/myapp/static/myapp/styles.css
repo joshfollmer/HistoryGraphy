@@ -91,20 +91,20 @@ nav ul li a:hover {
     color: #007bff; /* Change color on hover */
 }
 
-/* Hide the modal and overlay by default */
-.modal,
-.modal-overlay {
+/* Hide the model and overlay by default */
+.model,
+.model-overlay {
     display: none;
 }
 
-/* Show modal and overlay when the checkbox is checked */
-#profile-modal:checked ~ .modal,
-#profile-modal:checked ~ .modal-overlay {
+/* Show model and overlay when the checkbox is checked */
+#profile-model:checked ~ .model,
+#profile-model:checked ~ .model-overlay {
     display: block;
 }
 
 /* Styling for the overlay */
-.modal-overlay {
+.model-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -114,8 +114,8 @@ nav ul li a:hover {
     z-index: 999;
 }
 
-/* Styling for the modal */
-.modal {
+/* Styling for the model */
+.model {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -137,8 +137,8 @@ nav ul li a:hover {
     border-radius: 50%;
 }
 
-/* Styling for the modal close button */
-.modal-close {
+/* Styling for the model close button */
+.model-close {
     display: inline-block;
     margin-top: 15px;
     padding: 10px 20px;
@@ -149,7 +149,7 @@ nav ul li a:hover {
     cursor: pointer;
 }
 
-.modal-close:hover {
+.model-close:hover {
     background-color: #0056b3;
 }
 

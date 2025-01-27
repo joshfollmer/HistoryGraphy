@@ -24,8 +24,8 @@ def get_projects(user_id):
     for project in project_data:
         
         project_instance = Project(
-            id=project[0],  # Assuming the first field is the primary key (id)
-            name=project[2],  # Assuming the second field is the project_name
+            id=project[0],  
+            name=project[2],  
         )
         projects.append(project_instance)
     
@@ -57,21 +57,22 @@ def create_account(request):
         email = request.POST['email']
 
 
-        error_message = None  # Variable to store the error message
+        error_message = None  
 
     try:
         validate_password(password, user=None)  
     except ValidationError as e:
         error_message = e.messages  # This contains a list of validation error messages
         return render(request, 'create-account.html', {'error_message': error_message})
-    # Create the new user if all validations pass
+    
+    
     new_user = User.objects.create_user(
         username=username,
         email=email,
         password=password
     )
 
-    # Log in the new user
+   
     login(request, new_user)
 
     # Redirect to home after successful creation
@@ -86,14 +87,12 @@ def login_user(request):
         username = request.POST['username']
         password = request.POST['password']
 
-        # Authenticate the user
+        
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
-            # Log the user in
             login(request, user)
 
-            
             projects = get_projects(user.id)
 
 

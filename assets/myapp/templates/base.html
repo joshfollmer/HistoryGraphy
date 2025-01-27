@@ -18,7 +18,7 @@
             </ul>
             <ul class="right">
                 {% if user.is_authenticated %}
-                    <label for="profile-modal">
+                    <label for="profile-model">
                         <img src="{% static 'myapp/profile-user.png' %}" alt="User Icon" class="user-icon">
                     </label>
                 {% else %}
@@ -31,15 +31,15 @@
     </header>
 
 
-    <input type="checkbox" id="profile-modal" style="display: none;">
+    <input type="checkbox" id="profile-model" style="display: none;">
     
-    <div class="modal-overlay"></div>
-    <div class="modal">
+    <div class="model-overlay"></div>
+    <div class="model">
         <h2>User Profile</h2>
         <p>Name: {{ user.username }}</p>
         <p>Email: {{ user.email }}</p>
-        <a href="/logout_user/" class="modal-close">Logout</a>
-        <label for="profile-modal" class="modal-close">Close</label>
+        <a href="/logout_user/" class="model-close">Logout</a>
+        <label for="profile-model" class="model-close">Close</label>
     </div>
 
     <main>
