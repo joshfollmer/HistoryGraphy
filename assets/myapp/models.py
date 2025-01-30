@@ -1,5 +1,5 @@
 from django.db import models
-from neomodel import StructuredNode, StringProperty, IntegerProperty, ListProperty, DateProperty, BooleanProperty, RelationshipTo, config 
+from neomodel import StructuredNode, StringProperty, IntegerProperty, ArrayProperty, DateProperty, BooleanProperty, RelationshipTo, config 
 
 # Project model
 class Project(models.Model):
@@ -22,7 +22,7 @@ class Node(StructuredNode):
     url = StringProperty()
     contributor = StringProperty(required= True)
     language = StringProperty(required= True)
-    tags = ListProperty(StringProperty())
+    tags = ArrayProperty(StringProperty())
 
 
 
