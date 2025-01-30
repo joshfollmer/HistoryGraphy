@@ -103,3 +103,76 @@
     border-radius: 8px;
 }
 
+.project-model,
+.project-model-overlay {
+    display: none;
+}
+
+#create-project:checked ~ .project-model,
+#create-project:checked ~ .project-model-overlay {
+    display: block;
+}
+
+/* Styling for the overlay */
+.project-model-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* Styling for the model */
+.project-model {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 40%;
+    height: 40%;
+    text-align: center;
+    
+}
+
+.project-input {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Adjusts spacing between p and input */
+    
+}
+
+.project-input input {
+    width: 80%;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+
+}
+
+
+
+/* Styling for the model close button */
+.project-model-close {
+    display: inline-block;
+    margin: 25px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.project-model-close:hover {
+    background-color: #0056b3;
+}

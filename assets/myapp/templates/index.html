@@ -10,13 +10,25 @@
     <div class="banner">
         <div class="banner-content">
             <h1>Your Projects</h1>
-            <div class="create-button">New</div>
+            <label for="create-project" class="create-button">New</label>
         </div>
     </div>
-    
+
+        <input type="checkbox" id="create-project" style="display: none;">
+        <div class="project-model-overlay"></div>
+        <div class="project-model">
+            <h1>Create Project</h1>
+            <div class="project-input">
+                <p>Name:</p>
+                <input type="text" id="project-name" placeholder="Enter project name">
+            </div>
+            <a href = "/create-project/" class="project-model-close">Create</a>
+            <label for="create-project" class="project-model-close">Cancel</label> 
+        </div>
+
     <main>
-        <div class="main-content">
-            <!-- Loop through the projects and display them -->
+        <div class="main-content">       
+               
             <div class="projects-list">
                 {% if projects %}
                     <ul>
@@ -25,15 +37,19 @@
                                 <div class="name">
                                     <p>{{ project.name }}</p>
                                 </div>
-                                <div class="small-square"></div> <!-- The small square with a solid color -->
+                                <div class="small-square"></div>
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                <h1>Welcome to HistoryGraphy</h1>
+                    <h1>Welcome to HistoryGraphy</h1>
                     <p>No projects found. Start by creating one!</p>
                 {% endif %}
             </div>
         </div>
+
     </main>
+
+
+    
 {% endblock %}
