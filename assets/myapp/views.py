@@ -175,6 +175,19 @@ def create_project(request):
                 return render(request, 'index.html', {'error_message': error_message})
 
 def view_project(request, project_id):
+
+    project = get_project_from_cache(project_id)
+
+    if not project:
+        # If the project is not found in cache, fetch it again
+        projects = get_projects(request.user.id)
+        project = next((p for p in projects if p.id == project_id), None)
+        if not project:
+            return render(request, "error.html", {"error_message": "Project not found"})
+
+        # After fetching, store it back in the cache
+        cache.set('global_projects', projects, timeout=60*15)
+
     driver = get_neo4j_driver()
     session = driver.session()
 
@@ -228,16 +241,6 @@ def view_project(request, project_id):
 
 
     session.close()
-
-    # Get the current project from the cache
-    project = get_project_from_cache(project_id)
-
-    # If the cache timed out, reset it and get the project from the cache
-    if not project:
-        get_projects(User.id)
-        project = get_project_from_cache(project_id)
-
-
 
     
     return render(request, "graph.html", {

@@ -138,8 +138,8 @@
     display: none;
 }
 
-#create-project:checked ~ .project-model,
-#create-project:checked ~ .project-model-overlay {
+#popup:checked ~ .project-model,
+#popup:checked ~ .project-model-overlay {
     display: block;
 }
 
