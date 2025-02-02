@@ -1,15 +1,14 @@
 from django.db import models
 from neomodel import StructuredNode, StringProperty, IntegerProperty, ArrayProperty, DateProperty, BooleanProperty, RelationshipTo, config 
+from django.contrib.auth.models import User
 
 # Project model
 class Project(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    #created_at = models.DateTimeField(auto_now_add=True)
+    owner_id = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return self.name
-    
+
 
 
 class Node(StructuredNode):
@@ -29,7 +28,6 @@ class Node(StructuredNode):
 
 class Project_node(StructuredNode):
     name = StringProperty(required= True)
-    created_at = DateProperty(required= True)
     owner = StringProperty(required= True)
     project_id = IntegerProperty(unique_index= True, required= True)
 

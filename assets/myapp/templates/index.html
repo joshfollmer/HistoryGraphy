@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{% static 'myapp/index.css' %}">
 {% endblock %}
 
+
 {% block content %}
     <div class="banner">
         <div class="banner-content">
@@ -14,30 +15,41 @@
         </div>
     </div>
 
-        <input type="checkbox" id="create-project" style="display: none;">
-        <div class="project-model-overlay"></div>
-        <div class="project-model">
-            <h1>Create Project</h1>
-            <div class="project-input">
-                <p>Name:</p>
-                <input type="text" id="project-name" placeholder="Enter project name">
-            </div>
-            <a href = "/create-project/" class="project-model-close">Create</a>
-            <label for="create-project" class="project-model-close">Cancel</label> 
+    <input type="checkbox" id="create-project" style="display: none;">
+    <div class="project-model-overlay"></div>
+    <div class="project-model">
+        <h1>Create Project</h1>
+        <div class="project-input">
+            
+            <form method="POST" action="/create-project/">
+                {% csrf_token %}
+                <div class = "name-input">
+                    <p>Name:</p>
+                    <input type="text" id="project-name" name="project_name" placeholder="Enter project name">
+                </div>
+                <div class ="buttons">
+                    <input type="submit" class="project-model-close" value="Create">
+                    <input type="button" id="cancel-button" class="project-model-close" value="Cancel">
+                </div>
+                <script src="{% static 'js/popup_close.js' %}"></script>
+
+            </form>
         </div>
+    </div>
 
     <main>
         <div class="main-content">       
-               
             <div class="projects-list">
                 {% if projects %}
                     <ul>
                         {% for project in projects %}
                             <li class="project-card">
+                                <a href="{% url 'view_project' project.id %}" class="project-link">
                                 <div class="name">
                                     <p>{{ project.name }}</p>
                                 </div>
                                 <div class="small-square"></div>
+                            </a>
                             </li>
                         {% endfor %}
                     </ul>
@@ -47,9 +59,5 @@
                 {% endif %}
             </div>
         </div>
-
     </main>
-
-
-    
 {% endblock %}

@@ -28,6 +28,8 @@ urlpatterns = [
     path('create-account/', views.create_account, name='create-account'),
     path('login/', views.login_user, name='login-user'),
     path('logout_user/', views.logout_user, name='logout_user'),
+    path('create-project/', views.create_project, name ='create-project'),
+    path('project/<int:project_id>/', views.view_project, name='view_project'),
 ]
 
 
