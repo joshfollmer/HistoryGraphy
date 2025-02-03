@@ -18,7 +18,6 @@ class Source(StructuredNode):
     date_discovered = DateProperty()
     primary_source = BooleanProperty(required= True)
     description = StringProperty()
-    citation = StringProperty()
     url = StringProperty()
     contributor = StringProperty(required= True)
     language = StringProperty(required= True)

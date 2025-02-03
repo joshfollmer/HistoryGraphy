@@ -55,7 +55,6 @@
     z-index: 999;
 }
 
-/* Styling for the modal */
 .node-model {
     position: fixed;
     top: 50%;
@@ -66,11 +65,12 @@
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
-    width: 30%;
-    height: 40%;
-    max-height: 600px;
+    width: 50%;
+    max-width: 600px; /* Ensures the modal doesn't grow too large */
+    max-height: 80vh;  /* Limits the height of the modal */
+    overflow-y: auto;  /* Makes the modal scrollable if content exceeds the max height */
     text-align: center;
-    min-width: 600px;
+    box-sizing: border-box; /* Ensures padding doesn't make the modal too large */
 }
 
 .node-input {
@@ -110,7 +110,7 @@ form {
 
 .node-attribute {
     display: flex;              /* Enables flexbox */
-    justify-content: center;    /* Centers items horizontally */
+    justify-content: space-between;    
     align-items: center;        /* Centers items vertically */
     gap: 10px;                  /* Adds space between buttons */
         
@@ -128,26 +128,50 @@ form {
     transition: all 0.3s ease;
     font-size: 1.2rem;
     padding: 0.8em; /* Makes input field bigger */
+    flex: 2;
+}
+
+.node-attribute input[type="date"] {
+    padding: 5px 10px;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
 }
 
 .node-attribute p {
     font-size: 1.2em;
+    text-align: right; /* Aligns text to the right */
+    margin-right: 10px; /* Adds spacing between label and input */
 }
 
 .node-attribute label {
-    display: flex;               /* Enables Flexbox */
-    align-items: center;         /* Centers content vertically */
-    justify-content: center;     /* Centers content horizontally */
-    background-color: #007bff;   /* Add background color (blue in this example) */
-    color: white;                /* White text color */
-    padding: 5px 15px;           /* Reduced padding to make it less tall */
-    border-radius: 5px;          /* Rounded corners */
-    font-size: 1.2rem;           /* Font size */
-    cursor: pointer;            /* Make it look clickable */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    cursor: pointer;
     height: 2em;
-    line-height: 1.2;            /* Adjust line height to reduce vertical spacing */
+    line-height: 1.2;
+    color: white;
+    transition: opacity 0.3s, font-weight 0.3s; /* Smooth transition */
+    opacity: 0.6; /* Make non-selected labels semi-transparent */
 }
 
+/* When label is selected, make it bold and full opacity */
+.node-attribute label.selected {
+    font-weight: bold;
+    opacity: 1; /* Full opacity for selected label */
+}
+
+.node-type-primary {
+    background-color: darkgreen;
+}
+
+.node-type-secondary {
+    background-color: rgba(0, 128, 128, 0.932);
+}
 
 
 .buttons {
@@ -182,4 +206,54 @@ button.node-model-close {
 .node-model-close:focus {
     outline: none; /* Remove default outline */
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Add custom focus ring */
+}
+
+.tags-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+#tags-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 10px;
+    display: grid;  /* Enable grid layout */
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Creates flexible columns */
+    gap: 10px; /* Spacing between tags */
+}
+
+#tags-list li {
+    background-color: #f0f0f0;
+    padding: 5px 10px;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box; /* Ensures padding doesn't overflow the grid */
+}
+
+#tags-list button {
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 5px;
+    cursor: pointer;
+}
+
+#tag-input {
+    padding: 5px 10px;
+    
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button[type="button"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 10px;
 }
