@@ -30,6 +30,7 @@ urlpatterns = [
     path('logout_user/', views.logout_user, name='logout_user'),
     path('create-project/', views.create_project, name ='create-project'),
     path('project/<int:project_id>/', views.view_project, name='view_project'),
+    path('create-node/', views.create_node, name = 'create-node')
 ]
 
 

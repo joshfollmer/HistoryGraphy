@@ -16,7 +16,7 @@ class Source(StructuredNode):
     author = StringProperty(default = "Unknown")
     date_created = DateProperty(required= True)
     date_discovered = DateProperty()
-    primary_source = BooleanProperty(required= True)
+    is_primary = BooleanProperty(required= True)
     description = StringProperty()
     url = StringProperty()
     contributor = StringProperty(required= True)

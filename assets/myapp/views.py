@@ -6,11 +6,13 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import connection 
-from .models import Project
+from .models import Project, Source
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from neo4j import GraphDatabase
 import os
+import json
+from django.http import JsonResponse
 
 def get_supabase_client() -> Client:
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
@@ -250,3 +252,63 @@ def view_project(request, project_id):
     })
 
 
+@csrf_exempt
+def save_nodes(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        nodes_data = data.get('nodes', [])
+
+        for node_data in nodes_data:
+            # Save each node to the database (you might need to adjust this according to your model)
+            Source.objects.create(
+                name=node_data.get('name'),
+                source_type=node_data.get('sourceType'),
+                date_created=node_data.get('dateCreated'),
+                date_discovered=node_data.get('dateDiscovered'),
+                discovered_after_created=node_data.get('discoveredAfterCreated'),
+                tags=node_data.get('tags')  # Assuming your model can handle tags
+            )
+
+        return JsonResponse({'success': True, 'message': 'Nodes saved successfully'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from .models import Source
+
+def create_node(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        
+        title = data.get('title')
+        if not title:
+            return JsonResponse({'error': 'Title is required'}, status=400)
+        
+        node = Source(
+            title=title,
+            author=data.get('author', 'Unknown'),
+            date_created=data.get('date_created'),
+            date_discovered=data.get('date_discovered', data['date_created']),
+            is_primary=data.get('is_primary', False),
+            description=data.get('description'),
+            url=data.get('url'),
+            language=data.get('language'),
+            tags=data.get('tags', [])
+        )
+
+        node.save()
+        # Return all the fields in the response
+        return JsonResponse({
+            'title': node.title,
+            'author': node.author,
+            'date_created': node.date_created,
+            'date_discovered': node.date_discovered,
+            'is_primary': node.is_primary,
+            'description': node.description,
+            'url': node.url,
+            'language': node.language,
+            'tags': node.tags,
+        })
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
