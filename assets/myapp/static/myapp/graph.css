@@ -56,6 +56,7 @@
 }
 
 .node-model {
+    font-size: clamp(0.75rem, 2vw, 1rem);
     position: fixed;
     top: 50%;
     left: 50%;
@@ -74,7 +75,7 @@
 }
 
 .node-input {
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 2vw, 1rem);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -126,20 +127,20 @@ form {
     border-radius: 8px;
     font-size: 16px;
     transition: all 0.3s ease;
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 2vw, 1rem);
     padding: 0.8em; /* Makes input field bigger */
     flex: 2;
 }
 
 .node-attribute input[type="date"] {
     padding: 5px 10px;
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 2vw, 1rem);
     border-radius: 5px;
     border: 1px solid #ccc;
 }
 
 .node-attribute p {
-    font-size: 1.2em;
+    font-size: clamp(0.75rem, 2vw, 1rem);
     text-align: right; /* Aligns text to the right */
     margin-right: 10px; /* Adds spacing between label and input */
 }
@@ -150,7 +151,7 @@ form {
     justify-content: center;
     padding: 5px 15px;
     border-radius: 5px;
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 2vw, 1rem);
     cursor: pointer;
     height: 2em;
     line-height: 1.2;
@@ -182,7 +183,7 @@ form {
 }
 
 .buttons input {
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 2vw, 1rem);
     padding: 0.8em 1.5em; /* Adjusts button size dynamically */
 }
 

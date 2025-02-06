@@ -30,6 +30,33 @@
                 <label for="primary" class="node-type-primary">Primary</label>
                 <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
                 <label for="secondary" class="node-type-secondary">Secondary</label>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                    const labels = document.querySelectorAll(".node-attribute label");
+                    const radios = document.querySelectorAll("input[name='source_type']");
+
+                    labels.forEach(label => {
+                        label.addEventListener("click", function () {
+                            // Remove 'selected' class from all labels
+                            labels.forEach(l => l.classList.remove("selected"));
+
+                            // Add 'selected' class to clicked label
+                            this.classList.add("selected");
+
+                            // Set the associated radio button as checked
+                            document.getElementById(this.getAttribute("for")).checked = true;
+                        });
+                    });
+
+                    // Ensure correct label is marked as selected on page load
+                    radios.forEach(radio => {
+                        if (radio.checked) {
+                            document.querySelector(`label[for="${radio.id}"]`).classList.add("selected");
+                        }
+                    });
+                });
+
+                </script>
             </div>
             <div class="node-attribute">
                 <p>Author/creator:</p>
@@ -59,11 +86,13 @@
                 <p>Tags:</p>
                 <input type="text" id="tag-input" placeholder="Enter a tag" onkeydown="checkEnter(event)">
                 <button type="button" onclick="addTag()">+</button>
-                <ul id="tags-list"></ul>
+                
             </div>
+            <ul id="tags-list"></ul>
             <div class="buttons">
                 <input type="submit" class="node-model-close" value="Create">
-                <input type="button" class="node-model-close" value="Cancel">
+                <input type="button" class="node-model-close" id="cancel-button" value="Cancel">
+                <script src="{% static 'js/popup_close.js' %}"></script>
             </div>
         </form>
     </div>
