@@ -13,6 +13,8 @@ from neo4j import GraphDatabase
 import os
 import json
 from django.http import JsonResponse
+from datetime import datetime
+
 
 def get_supabase_client() -> Client:
     return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
@@ -181,7 +183,7 @@ def view_project(request, project_id):
     project = get_project_from_cache(project_id)
 
     if not project:
-        # If the project is not found in cache, fetch it again
+        # If the project is not found in cache, fetch it from the database again
         projects = get_projects(request.user.id)
         project = next((p for p in projects if p.id == project_id), None)
         if not project:
@@ -273,31 +275,74 @@ def save_nodes(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-from django.shortcuts import render
-from django.http import JsonResponse
-from .models import Source
+
 
 def create_node(request):
     if request.method == 'POST':
+        print("creating node")
         data = json.loads(request.body)
         
         title = data.get('title')
         if not title:
             return JsonResponse({'error': 'Title is required'}, status=400)
         
+        date_created_str = data.get('date_created')
+        date_discovered_str = data.get('date_discovered', date_created_str)
+
+        date_created_datetime = datetime.strptime(date_created_str, '%Y-%m-%d').date()
+        date_discovered_datetime = datetime.strptime(date_discovered_str, '%Y-%m-%d').date()
+
+
         node = Source(
             title=title,
             author=data.get('author', 'Unknown'),
-            date_created=data.get('date_created'),
-            date_discovered=data.get('date_discovered', data['date_created']),
+            date_created=date_created_datetime,
+            date_discovered=date_discovered_datetime,
             is_primary=data.get('is_primary', False),
             description=data.get('description'),
             url=data.get('url'),
             language=data.get('language'),
-            tags=data.get('tags', [])
+            tags=data.get('tags', []),
+            contributor= request.user.username
         )
 
-        node.save()
+        # node.save()
+
+        driver = get_neo4j_driver()
+        session = driver.session()
+
+        query = """
+        CREATE (n:Source {
+            title: $title, 
+            author: $author, 
+            date_created: $date_created, 
+            date_discovered: $date_discovered, 
+            is_primary: $is_primary, 
+            description: $description, 
+            url: $url, 
+            language: $language, 
+            tags: $tags, 
+            contributor: $contributor
+        })
+        """
+        
+        params = {
+            'title': node.title,
+            'author': node.author,
+            'date_created': node.date_created,
+            'date_discovered': node.date_discovered,
+            'is_primary': node.is_primary,
+            'description': node.description,
+            'url': node.url,
+            'language': node.language,
+            'tags': node.tags,
+            'contributor': node.contributor
+        }
+
+        session.run(query, params)
+         # Confirm that the node was saved
+        print(f"Node saved: ID={node.id}, Title={node.title}, Contributor={node.contributor}")
+
         # Return all the fields in the response
         return JsonResponse({
             'title': node.title,
@@ -309,6 +354,7 @@ def create_node(request):
             'url': node.url,
             'language': node.language,
             'tags': node.tags,
+            'contributor' : node.contributor
         })
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
