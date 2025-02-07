@@ -74,6 +74,12 @@ TEMPLATES = [
     },
 ]
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',  # For development (in-memory cache)
+        'TIMEOUT': 60 * 15,  # Cache timeout (15 minutes)
+    }
+}
 WSGI_APPLICATION = 'myapp.wsgi.application'
 
 

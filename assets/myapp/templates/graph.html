@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'myapp/graph.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="banner">
+    <div class="banner-content">
+        <label for="popup" class="add-node">New Node</label>
+    </div>
+</div>
+
+<input type="checkbox" id="popup" style="display: none;">
+<div class="node-overlay"></div>
+<div class="node-model">
+    <h1>Create Source</h1>
+    <div class="node-input">
+        <form method="POST" id="create-node-form" action="/create-node/">
+            {% csrf_token %}
+            <div class="node-attribute">
+                <p>Title:</p>
+                <input type="text" id="node-name" name="node_name" placeholder="Enter source title">
+                <p id="node-name-error" style="color: red; display: none;">Title is required</p>
+            </div>
+            <div class="node-attribute">
+                <p>Source type:</p>
+                <input type="radio" id="primary" name="source_type" value="primary" style="display:none;">
+                <label for="primary" class="node-type-primary">Primary</label>
+                <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
+                <label for="secondary" class="node-type-secondary">Secondary</label>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                    const labels = document.querySelectorAll(".node-attribute label");
+                    const radios = document.querySelectorAll("input[name='source_type']");
+
+                    labels.forEach(label => {
+                        label.addEventListener("click", function () {
+                            // Remove 'selected' class from all labels
+                            labels.forEach(l => l.classList.remove("selected"));
+
+                            // Add 'selected' class to clicked label
+                            this.classList.add("selected");
+
+                            // Set the associated radio button as checked
+                            document.getElementById(this.getAttribute("for")).checked = true;
+                        });
+                    });
+
+                    // Ensure correct label is marked as selected on page load
+                    radios.forEach(radio => {
+                        if (radio.checked) {
+                            document.querySelector(`label[for="${radio.id}"]`).classList.add("selected");
+                        }
+                    });
+                });
+
+                </script>
+            </div>
+            <div class="node-attribute">
+                <p>Author/creator:</p>
+                <input type="text" id="author" name="author">
+            </div>
+            <div class="node-attribute">
+                <p>Date created:</p>
+                <input type="date" id="date-created" name="date_created">
+            </div>
+            <div class="node-attribute">
+                <p>Date discovered:</p>
+                <input type="date" id="date-discovered" name="date_discovered">
+            </div>
+            <div class="node-attribute">
+                <p>Language of source:</p>
+                <input type="text" id="language" name="language">
+            </div>
+            <div class="node-attribute">
+                <p>Link to source:</p>
+                <input type="text" id="link" name="link">
+            </div>
+            <div class="node-attribute">
+                <p>Description:</p>
+                <input type="text" id="description" name="description">
+            </div>
+            <div class="node-attribute">
+                <p>Tags:</p>
+                <input type="text" id="tag-input" placeholder="Enter a tag" onkeydown="checkEnter(event)">
+                <button type="button" onclick="addTag()">+</button>
+                
+            </div>
+            <ul id="tags-list"></ul>
+            <div class="buttons">
+                <input type="submit" class="node-model-close" value="Create">
+                <input type="button" class="node-model-close" id="cancel-button" value="Cancel">
+                <script src="{% static 'js/popup_close.js' %}"></script>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+<div id="cy"></div> <!-- Cytoscape container -->
+
+{% block extra_js %}
+<script>
+    let tags = [];
+    
+    function addTag() {
+        const tagInput = document.getElementById('tag-input');
+        const tagValue = tagInput.value.trim();
+        if (tagValue && !tags.includes(tagValue)) {
+            tags.push(tagValue);
+            updateTagsList();
+            tagInput.value = '';
+        }
+    }
+
+    function updateTagsList() {
+        const tagsList = document.getElementById('tags-list');
+        tagsList.innerHTML = '';
+        tags.forEach(tag => {
+            const li = document.createElement('li');
+            li.textContent = tag;
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'x';
+            removeBtn.onclick = () => removeTag(tag);
+            li.appendChild(removeBtn);
+            tagsList.appendChild(li);
+        });
+    }
+
+    function removeTag(tag) {
+    const index = tags.indexOf(tag);
+    if (index > -1) {
+        tags.splice(index, 1);  // Modify array instead of reassigning
+    }
+    updateTagsList();
+}
+
+    function checkEnter(event) {
+        if (event.key === 'Enter') {
+            addTag();
+        }
+    }
+</script>
+<script src="{% static 'js/create-node.js' %}"></script>
+{% endblock %}
+

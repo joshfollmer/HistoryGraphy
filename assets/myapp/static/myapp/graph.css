@@ -1,0 +1,260 @@
+/* Banner Styles */
+.banner {
+    background-color: rgba(0, 128, 128, 0.932); /* Banner background color */
+    color: white; /* Text color */
+    min-height: 60px;
+    text-align: left; /* Center the text */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* Flexbox container for banner content */
+.banner-content {
+    display: flex;
+    align-items: center; /* Vertically align text and button */
+    gap: 20px; /* Add spacing between text and button */
+    margin-left: 20px;
+}
+
+.add-node {
+    background-color: white; 
+    border: none; /* Remove border */
+    color:rgba(0, 128, 128, 0.932); /* Blue text */
+    padding: 15px 32px; /* Padding around text */
+    text-align: center; /* Center text */
+    text-decoration: none; /* Remove underline */
+    display: inline-block; /* Display as inline block */
+    font-size: 16px; /* Font size */
+    margin: 4px 2px; /* Margin around button */
+    cursor: pointer; /* Cursor on hover */
+    border-radius: 8px; /* Rounded corners */
+}
+
+/* Modal and Overlay */
+.node-overlay,
+.node-model {
+    display: none;  /* Hide both by default */
+}
+
+/* Show the modal when the checkbox is checked */
+#popup:checked ~ .node-model,
+#popup:checked ~ .node-overlay {
+    display: block;
+}
+
+/* Overlay styles */
+.node-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.node-model {
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 50%;
+    max-width: 600px; /* Ensures the modal doesn't grow too large */
+    max-height: 80vh;  /* Limits the height of the modal */
+    overflow-y: auto;  /* Makes the modal scrollable if content exceeds the max height */
+    text-align: center;
+    box-sizing: border-box; /* Ensures padding doesn't make the modal too large */
+}
+
+.node-input {
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.node-model-close {
+    display: inline-block;
+    margin: 25px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none; /* Ensure no underline */
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.node-model-close:hover {
+    background-color: #0056b3;
+}
+
+.node-model-close:focus {
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Custom focus ring */
+}
+
+
+form {
+    padding-top: 20px;
+}
+
+.node-attribute {
+    display: flex;              /* Enables flexbox */
+    justify-content: space-between;    
+    align-items: center;        /* Centers items vertically */
+    gap: 10px;                  /* Adds space between buttons */
+        
+}
+
+
+.node-attribute input {
+    margin: 0;
+    width: 80%;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    padding: 0.8em; /* Makes input field bigger */
+    flex: 2;
+}
+
+.node-attribute input[type="date"] {
+    padding: 5px 10px;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.node-attribute p {
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    text-align: right; /* Aligns text to the right */
+    margin-right: 10px; /* Adds spacing between label and input */
+}
+
+.node-attribute label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    cursor: pointer;
+    height: 2em;
+    line-height: 1.2;
+    color: white;
+    transition: opacity 0.3s, font-weight 0.3s; /* Smooth transition */
+    opacity: 0.6; /* Make non-selected labels semi-transparent */
+}
+
+/* When label is selected, make it bold and full opacity */
+.node-attribute label.selected {
+    font-weight: bold;
+    opacity: 1; /* Full opacity for selected label */
+}
+
+.node-type-primary {
+    background-color: darkgreen;
+}
+
+.node-type-secondary {
+    background-color: rgba(0, 128, 128, 0.932);
+}
+
+
+.buttons {
+    display: flex;          /* Enables flexbox */
+    justify-content: center; /* Centers buttons horizontally */
+    gap: 10px;              /* Adds space between buttons */
+    margin-top: 15px;       /* Adds spacing from input field */
+}
+
+.buttons input {
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    padding: 0.8em 1.5em; /* Adjusts button size dynamically */
+}
+
+/* Apply the styles to both input and button */
+input.node-model-close,
+button.node-model-close {
+    display: inline-block;
+    margin: 25px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.node-model-close:hover {
+    background-color: #0056b3;
+}
+
+.node-model-close:focus {
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Add custom focus ring */
+}
+
+.tags-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+#tags-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-bottom: 10px;
+    display: grid;  /* Enable grid layout */
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Creates flexible columns */
+    gap: 10px; /* Spacing between tags */
+}
+
+#tags-list li {
+    background-color: #f0f0f0;
+    padding: 5px 10px;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box; /* Ensures padding doesn't overflow the grid */
+}
+
+#tags-list button {
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 5px;
+    cursor: pointer;
+}
+
+#tag-input {
+    padding: 5px 10px;
+    
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button[type="button"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 10px;
+}

@@ -1,36 +1,52 @@
 from django.db import models
-from neomodel import StructuredNode, StringProperty, IntegerProperty, ArrayProperty, DateProperty, BooleanProperty, RelationshipTo, config 
+from neomodel import StructuredNode, StringProperty, IntegerProperty, ArrayProperty, DateProperty, BooleanProperty, RelationshipTo
+from django.contrib.auth.models import User
 
 # Project model
 class Project(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    #created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-    
+    owner_id = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
-class Node(StructuredNode):
-    name = StringProperty(unique_index= True, required= True)
-    author = StringProperty(required= True)
-    date = DateProperty(required= True)
-    primary_source = BooleanProperty()
+
+
+class Source(StructuredNode):
+    title = StringProperty(unique_index= True, required= True)
+    author = StringProperty(default = "Unknown")
+    date_created = DateProperty(required= True)
+    date_discovered = DateProperty()
+    is_primary = BooleanProperty(required= True)
     description = StringProperty()
-    citation = StringProperty()
     url = StringProperty()
     contributor = StringProperty(required= True)
     language = StringProperty(required= True)
     tags = ArrayProperty(StringProperty())
+
+    def __init__(self, **kwargs):
+        super(Source, self).__init__(**kwargs)
+        
+        # If date_discovered is not set, use date_created as the default value
+        if not self.date_discovered:
+            self.date_discovered = self.date_created
+
+class PrimarySource(Source):
+    __label__ = 'PrimarySource'
+    children = RelationshipTo('SecondarySource', 'CITED_BY')
+
+class SecondarySource(Source):
+    __label__ = 'SecondarySource'
+    parents = RelationshipTo('Source',  'CITES')
+
+
+
 
 
 
 
 class Project_node(StructuredNode):
     name = StringProperty(required= True)
-    created_at = DateProperty(required= True)
     owner = StringProperty(required= True)
     project_id = IntegerProperty(unique_index= True, required= True)
 
-    nodes = RelationshipTo('Node', 'CONTAINS')
+    nodes = RelationshipTo('Source', 'CONTAINS')

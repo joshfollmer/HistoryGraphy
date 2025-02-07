@@ -1,0 +1,192 @@
+/* Banner Styles */
+.banner {
+    background-color: rgba(0, 128, 128, 0.932); /* Banner background color */
+    color: white; /* Text color */
+    min-height: 60px;
+    text-align: left; /* Center the text */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* Flexbox container for banner content */
+.banner-content {
+    display: flex;
+    align-items: center; /* Vertically align text and button */
+    gap: 20px; /* Add spacing between text and button */
+    margin-left: 20px;
+}
+
+
+.banner h1 {
+    margin: 0; /* Remove default margin */
+    color: white;
+    font-size: 28px; /* Adjust font size */
+    text-align: left;
+}
+
+/* Button stlye */
+
+.create-button {
+    background-color: white; 
+    border: none; /* Remove border */
+    color:rgba(0, 128, 128, 0.932); ; /* Blue text */
+    padding: 15px 32px; /* Padding around text */
+    text-align: center; /* Center text */
+    text-decoration: none; /* Remove underline */
+    display: inline-block; /* Display as inline block */
+    font-size: 16px; /* Font size */
+    margin: 4px 2px; /* Margin around button */
+    cursor: pointer; /* Cursor on hover */
+    border-radius: 8px; /* Rounded corners */
+}
+
+
+
+
+.projects-list ul {
+    display: flex;                /* This can be used if you want to control the ul as a flex container */
+    flex-wrap: wrap;              /* Allow wrapping of items inside the ul */
+    padding: 0;                   /* Remove padding */
+    margin: 20px;                    /* Remove margin */
+    list-style-type: none;        /* Remove default list bullets */
+    width: 100%;                  /* Make sure the ul stretches to the full width */
+}
+
+/* Project item style */
+.projects-list li {
+    list-style-type: none;
+    width: 200px; /* Fixed width for each project card */
+    height: 200px; /* Fixed height for each project card */
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column; /* Stack content vertically inside each card */
+    align-items: center;
+    justify-content: flex-start;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin: 20px; 
+    padding-top: 20px;
+}
+
+/* Project item hover effect */
+.projects-list li:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Project name styles */
+.projects-list li p {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+
+
+.project-card .name {
+    width: 100%;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.project-card .small-square {
+    width: 80%;
+    height: 70%;
+    background-color: #b0c4de;
+    border-radius: 8px;
+}
+
+.project-model,
+.project-model-overlay {
+    display: none;
+}
+
+#create-project:checked ~ .project-model,
+#create-project:checked ~ .project-model-overlay {
+    display: block;
+}
+
+/* Styling for the overlay */
+.project-model-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+/* Styling for the model */
+.project-model {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    width: 40%;
+    height: 40%;
+    text-align: center;
+}
+
+.project-input {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Adjusts spacing between p and input */
+}
+
+.project-input input {
+    width: 80%;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+/* Styling for .project-model-close to work with both buttons and inputs */
+.project-model-close {
+    display: inline-block;
+    margin: 25px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none; /* Ensure no underline */
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;  /* Center the text inside the button */
+}
+
+/* Apply the styles to both input and button */
+input.project-model-close,
+button.project-model-close {
+    display: inline-block;
+    margin: 25px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.project-model-close:hover {
+    background-color: #0056b3;
+}
+
+.project-model-close:focus {
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Add custom focus ring */
+}
