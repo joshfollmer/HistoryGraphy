@@ -33,7 +33,7 @@ def get_projects(user_id):
     for project in project_data:
         
         project_instance = Project(
-            id=project[0],  
+            project_id=project[0],  
             name=project[2],  
         )
         projects.append(project_instance)
@@ -45,7 +45,7 @@ def get_project_from_cache(project_id):
     projects = cache.get('global_projects')  
     if projects:
         
-        project = next((p for p in projects if p.id == project_id), None)
+        project = next((p for p in projects if p.project_id == project_id), None)
         return project
     return None  
 
@@ -162,7 +162,7 @@ def create_project(request):
             session = driver.session()
 
             query = """
-            CREATE (p:Project {id: $project_id, name: $project_name, owner_id: $owner_id})
+            CREATE (p:Project {project_id: $project_id, name: $project_name, owner_id: $owner_id})
             """
             session.run(query, project_id=project_id, project_name=new_project.name, owner_id=new_project.owner_id.id)
 
@@ -170,22 +170,22 @@ def create_project(request):
 
 
 
-            # Pass the project to the template 
-            return render(request, 'graph.html', {'project': new_project})
+            
+            return view_project(request, project_id)
 
         else:
                 # Handle the case where the insert fails
                 error_message = "Failed to create project."
                 return render(request, 'index.html', {'error_message': error_message})
 
-def view_project(request, project_id):
+def get_nodes(request, project_id):
 
     project = get_project_from_cache(project_id)
 
     if not project:
         # If the project is not found in cache, fetch it from the database again
         projects = get_projects(request.user.id)
-        project = next((p for p in projects if p.id == project_id), None)
+        project = next((p for p in projects if p.project_id == project_id), None)
         if not project:
             return render(request, "error.html", {"error_message": "Project not found"})
 
@@ -195,63 +195,42 @@ def view_project(request, project_id):
     driver = get_neo4j_driver()
     session = driver.session()
 
+    
+
     # Query to get the project node and its neighbors
     query = """
-    MATCH (p:Project {id: $project_id})-[:CONNECTED_TO]-(neighbor)
-    OPTIONAL MATCH (neighbor)-[r:CONNECTED_TO]-(other_neighbor)
-    WHERE other_neighbor IN [(p)-[:CONNECTED_TO]-(n) | n]  // Keep only edges between project neighbors
-    RETURN p, neighbor, r, other_neighbor
+    MATCH (p:Project {project_id: $project_id})-[:CONNECTED_TO]-(neighbor)
+    RETURN neighbor
     """
+
+
     result = session.run(query, project_id=project_id)
 
+ 
     
+    neighbors = []
     
-    # Loop through the retrieved nodes (the neighbors of the project node) and get every unique node and connection 
-    nodes = []  
-    edges = []
+    # Process each record from the query result
+    for record in result:
+        print("Processing Record:", record)  # Debugging: print each record being processed
+        neighbor_node = record["neighbor"]
+        
+        if neighbor_node:  # Ensure there is a neighbor node
+            node_title = neighbor_node.get("title", "Untitled")  # Default to "Untitled" if no title exists
+            print(f"Adding Neighbor Node: {node_title}")  # Debugging: Check the title
+            neighbors.append({
+                "data": {
+                    "id": node_title,  # Use title as the ID
+                    "label": node_title,  # Use title as the label
+                }
+            })
 
-    # Ensure result has records before looping
-    if result.peek() is not None:
-        seen_nodes = set()
-        seen_edges = set()
-
-        for record in result:
-            project_node = record["p"]
-            neighbor_node = record["neighbor"]
-            relationship = record["r"]
-            other_neighbor = record["other_neighbor"]
-
-
-
-            # Add neighbor nodes (if they exist)
-            if neighbor_node and neighbor_node["id"] not in seen_nodes:
-                nodes.append({"id": neighbor_node["id"], "label": neighbor_node["name"]})
-                seen_nodes.add(neighbor_node["id"])
-
-            if other_neighbor and other_neighbor["id"] not in seen_nodes:
-                nodes.append({"id": other_neighbor["id"], "label": other_neighbor["name"]})
-                seen_nodes.add(other_neighbor["id"])
-
-            # Add edges: between project -> neighbor and neighbor -> neighbor
-            if neighbor_node and (project_node["id"], neighbor_node["id"]) not in seen_edges:
-                edges.append({"source": project_node["id"], "target": neighbor_node["id"]})
-                seen_edges.add((project_node["id"], neighbor_node["id"]))
-
-            if relationship and other_neighbor:
-                if (neighbor_node["id"], other_neighbor["id"]) not in seen_edges:
-                    edges.append({"source": neighbor_node["id"], "target": other_neighbor["id"]})
-                    seen_edges.add((neighbor_node["id"], other_neighbor["id"]))
-
-
-
-    session.close()
+  
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"nodes": neighbors})
 
     
-    return render(request, "graph.html", {
-        "project": project,
-        "nodes": nodes,
-        "edges": edges
-    })
+    return render(request, "graph.html", {"project": project})
 
 
 @csrf_exempt
@@ -261,14 +240,14 @@ def save_nodes(request):
         nodes_data = data.get('nodes', [])
 
         for node_data in nodes_data:
-            # Save each node to the database (you might need to adjust this according to your model)
+            
             Source.objects.create(
                 name=node_data.get('name'),
                 source_type=node_data.get('sourceType'),
                 date_created=node_data.get('dateCreated'),
                 date_discovered=node_data.get('dateDiscovered'),
                 discovered_after_created=node_data.get('discoveredAfterCreated'),
-                tags=node_data.get('tags')  # Assuming your model can handle tags
+                tags=node_data.get('tags')  
             )
 
         return JsonResponse({'success': True, 'message': 'Nodes saved successfully'})
@@ -279,7 +258,7 @@ def save_nodes(request):
 
 def create_node(request):
     if request.method == 'POST':
-        print("creating node")
+        
         data = json.loads(request.body)
         
         title = data.get('title')
@@ -291,6 +270,9 @@ def create_node(request):
 
         date_created_datetime = datetime.strptime(date_created_str, '%Y-%m-%d').date()
         date_discovered_datetime = datetime.strptime(date_discovered_str, '%Y-%m-%d').date()
+
+        project_id = int(data.get('project_id'))
+        
 
 
         node = Source(
@@ -305,14 +287,15 @@ def create_node(request):
             tags=data.get('tags', []),
             contributor= request.user.username
         )
-
-        # node.save()
+        
 
         driver = get_neo4j_driver()
         session = driver.session()
 
-        query = """
-        CREATE (n:Source {
+        query = (
+        "MATCH (p:Project)"
+        "WHERE p.project_id = $projectId "
+        """CREATE (n:Source {
             title: $title, 
             author: $author, 
             date_created: $date_created, 
@@ -323,8 +306,10 @@ def create_node(request):
             language: $language, 
             tags: $tags, 
             contributor: $contributor
-        })
-        """
+        })"""
+        "MERGE (p)-[:CONNECTED_TO]->(n)"
+        "RETURN n.title AS node_id"
+        )
         
         params = {
             'title': node.title,
@@ -335,13 +320,19 @@ def create_node(request):
             'description': node.description,
             'url': node.url,
             'language': node.language,
-            'tags': node.tags,
-            'contributor': node.contributor
+            'tags': node.tags if isinstance(node.tags, list) else [],
+            'contributor': node.contributor,
+            'projectId': project_id
         }
 
+        print("Running Query:", query)
+        print("With Params:", params)
+
+
+     
         session.run(query, params)
-         # Confirm that the node was saved
-        print(f"Node saved: ID={node.id}, Title={node.title}, Contributor={node.contributor}")
+        session.close()
+       
 
         # Return all the fields in the response
         return JsonResponse({
@@ -358,3 +349,6 @@ def create_node(request):
         })
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def view_project(request, project_id):
+    return render(request, "graph.html", {"project_id": project_id})

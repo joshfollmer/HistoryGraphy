@@ -28,7 +28,7 @@
                     <input type="text" id="project-name" name="project_name" placeholder="Enter project name">
                 </div>
                 <div class ="buttons">
-                    <input type="submit" class="project-model-close" value="Create">
+                    <input type="submit" id="create-button" class="project-model-close" value="Create">
                     <input type="button" id="cancel-button" class="project-model-close" value="Cancel">
                 </div>
                 <script src="{% static 'js/popup_close.js' %}"></script>
@@ -44,7 +44,7 @@
                     <ul>
                         {% for project in projects %}
                             <li class="project-card">
-                                <a href="{% url 'view_project' project.id %}" class="project-link">
+                                <a href="{% url 'view_project' project.project_id %}" class="project-link">
                                 <div class="name">
                                     <p>{{ project.name }}</p>
                                 </div>

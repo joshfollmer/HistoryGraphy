@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 # Project model
 class Project(models.Model):
-    id = models.AutoField(primary_key=True)
+    project_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
     owner_id = models.ForeignKey(User, on_delete=models.CASCADE)
 
@@ -37,6 +37,7 @@ class PrimarySource(Source):
 class SecondarySource(Source):
     __label__ = 'SecondarySource'
     parents = RelationshipTo('Source',  'CITES')
+    children = RelationshipTo('Source', 'CITED_BY')
 
 
 

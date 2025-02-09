@@ -12,6 +12,18 @@
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
+<script>
+    var projectId = "{{ project_id }}";  
+</script>
+
+
+
+
+<div id="cy" class="graph"></div> <!-- Cytoscape container -->
+<script src="{% static 'js/graph.js' %}"></script>
+
+
 <input type="checkbox" id="popup" style="display: none;">
 <div class="node-overlay"></div>
 <div class="node-model">
@@ -90,16 +102,16 @@
             </div>
             <ul id="tags-list"></ul>
             <div class="buttons">
-                <input type="submit" class="node-model-close" value="Create">
+                <input type="submit" class="node-model-close" id="create-button" value="Create">
                 <input type="button" class="node-model-close" id="cancel-button" value="Cancel">
-                <script src="{% static 'js/popup_close.js' %}"></script>
+                
             </div>
+            <script src="{% static 'js/popup_close.js' %}"></script>
         </form>
     </div>
 </div>
 {% endblock %}
 
-<div id="cy"></div> <!-- Cytoscape container -->
 
 {% block extra_js %}
 <script>

@@ -20,6 +20,7 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         dateDiscovered = dateCreated;
     }
 
+
     // Create node object
     const newNode = {
         title,
@@ -31,51 +32,52 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         url,
         language,
         tags,
+        project_id : projectId
     };
 
     // Send data to Django server
     fetch('/create-node/', {
-method: 'POST',
-headers: {
-    'Content-Type': 'application/json',
-    'X-CSRFToken': '{{ csrf_token }}'
-},
-body: JSON.stringify(newNode)
-})
-.then(response => {
-    console.log("Response status:", response.status);
-    return response.json();
-})
-.then(data => {
-    console.log("Response data:", data);
-})
-.catch(error => {
-    console.error("Fetch error:", error);
-})
-
-    .then(response => response.json())
-    .then(data => {
-        // Render the node on the graph
-        const cy = cytoscape({
-            container: document.getElementById('cy'),
-            elements: [
-                {
-                    data: {  label: data.title }
-                }
-            ],
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        'background-color': '#007bff',
-                        'label': 'data(label)',
-                        'width': '30px',
-                        'height': '30px'
-                    }
-                }
-            ],
-            layout: { name: 'grid', rows: 2 }
-        });
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify(newNode)
     })
-    .catch(error => console.error('Error:', error));
-});
+    .then(response => {
+        console.log("Response status:", response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log("Response data:", data);
+    })
+    .catch(error => {
+        console.error("Fetch error:", error);
+    })
+
+        .then(response => response.json())
+        .then(data => {
+            // Render the node on the graph
+            const cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: [
+                    {
+                        data: {  label: data.title }
+                    }
+                ],
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#007bff',
+                            'label': 'data(label)',
+                            'width': '30px',
+                            'height': '30px'
+                        }
+                    }
+                ],
+                layout: { name: 'grid', rows: 2 }
+            });
+        })
+        .catch(error => console.error('Error:', error));
+    });
