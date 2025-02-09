@@ -179,34 +179,16 @@ def create_project(request):
                 return render(request, 'index.html', {'error_message': error_message})
 
 def get_nodes(request, project_id):
-
-    project = get_project_from_cache(project_id)
-
-    if not project:
-        # If the project is not found in cache, fetch it from the database again
-        projects = get_projects(request.user.id)
-        project = next((p for p in projects if p.project_id == project_id), None)
-        if not project:
-            return render(request, "error.html", {"error_message": "Project not found"})
-
-        # After fetching, store it back in the cache
-        cache.set('global_projects', projects, timeout=60*15)
-
     driver = get_neo4j_driver()
     session = driver.session()
-
-    
 
     # Query to get the project node and its neighbors
     query = """
     MATCH (p:Project {project_id: $project_id})-[:CONNECTED_TO]-(neighbor)
     RETURN neighbor
     """
-
-
     result = session.run(query, project_id=project_id)
 
- 
     
     neighbors = []
     
@@ -218,19 +200,42 @@ def get_nodes(request, project_id):
         if neighbor_node:  # Ensure there is a neighbor node
             node_title = neighbor_node.get("title", "Untitled")  # Default to "Untitled" if no title exists
             print(f"Adding Neighbor Node: {node_title}")  # Debugging: Check the title
+
+            date_created = neighbor_node.get("date_created", None)
+            date_discovered = neighbor_node.get("date_discovered", None)
+
+            # If the date fields exist, convert them to string (ISO format)
+            if date_created:
+                date_created = date_created.isoformat()
+            if date_discovered:
+                date_discovered = date_discovered.isoformat()
+            # Collect all properties of the neighbor node
             neighbors.append({
                 "data": {
                     "id": node_title,  # Use title as the ID
                     "label": node_title,  # Use title as the label
+                    "author": neighbor_node.get("author", "Unknown"),
+                    "date_created": date_created,
+                    "date_discovered": date_discovered,
+                    "is_primary": neighbor_node.get("is_primary", False),
+                    "description": neighbor_node.get("description", ""),
+                    "url": neighbor_node.get("url", ""),
+                    "contributor": neighbor_node.get("contributor", ""),
+                    "language": neighbor_node.get("language", ""),
+                    "tags": neighbor_node.get("tags", []),  # Assuming tags are stored as a list
                 }
             })
 
-  
+    session.close()
+
+    # Debugging: print the final list of neighbors
+    print("Processed neighbors:", neighbors)
+
+    # Return the nodes (neighbors) as JSON to the frontend
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({"nodes": neighbors})
 
-    
-    return render(request, "graph.html", {"project": project})
+    return render(request, "graph.html", {"project_id": project_id})
 
 
 @csrf_exempt
