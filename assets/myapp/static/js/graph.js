@@ -1,21 +1,33 @@
 document.addEventListener("DOMContentLoaded", function () {
-    fetch(`/get_nodes/${projectId}/`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Fetched data:", data);  // Log the response data
-
+    
+    
+       
+    console.log(nodes);
         // Sort nodes by date_discovered (ascending order)
-        const sortedNodes = data.nodes.sort((a, b) => {
-            const dateA = new Date(a.data.date_discovered);
-            const dateB = new Date(b.data.date_discovered);
+        const sortedNodes = nodes.sort((a, b) => {
+            const dateA = new Date(a.data.date_discovered).getFullYear();
+            const dateB = new Date(b.data.date_discovered).getFullYear();
             return dateA - dateB;  // Sorting from earliest to latest
         });
 
-        // Assign y-position based on the sorted order of date_discovered
-        sortedNodes.forEach((node, index) => {
-            node.position = { x: 100, y: index * 100 };  // Fixed x, dynamic y based on order
+        let yearPositions = {};  // Store assigned Y positions for each year
+        let xSpacing = 150;  // Horizontal spacing between nodes in the same year
+
+        // Assign y-position based on unique years
+        sortedNodes.forEach((node) => {
+            const year = new Date(node.data.date_discovered).getFullYear();
+            
+            if (!(year in yearPositions)) {
+                // Assign a new y position for this year
+                yearPositions[year] = Object.keys(yearPositions).length * 100;
+            }
+
+            // Determine x position (shift horizontally if there are multiple nodes in the same year)
+            const xOffset = (yearPositions[year].count || 0) * xSpacing;
+            node.position = { x: 100 + xOffset, y: yearPositions[year] };
+
+            // Increment counter for this year (for horizontal shifting)
+            yearPositions[year].count = (yearPositions[year].count || 0) + 1;
         });
 
         var cy = cytoscape({
@@ -27,15 +39,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     selector: "node",
                     style: {
                         "background-color": function (node) {
-                            // Set color based on whether it's primary or not
                             return node.data('is_primary') ? '#006400' : '#008080';  // Green for primary, blue for secondary
                         },
-                        "label": "data(label)",  // Display the title as label
+                        "label": "data(label)",
                         "color": "#fff",
                         "text-valign": "center",
                         "text-halign": "center",
                         "font-size": "14px",
-                        
                     }
                 },
                 {
@@ -50,21 +60,18 @@ document.addEventListener("DOMContentLoaded", function () {
             ],
 
             layout: {
-                name: "preset",  // Use 'preset' layout to respect the manually set positions
+                name: "preset",  // Use manually assigned positions
                 positions: function (node) {
-                    return node.position();  // Use the fixed positions from our sorted nodes
+                    return node.position();  // Use fixed positions from our sorted nodes
                 }
             },
 
-            minZoom: 0.1,  // Minimum zoom
-            maxZoom: 2.0,  // Maximum zoom
+            minZoom: 0.1,
+            maxZoom: 2.0,
         });
-        cy.nodes().forEach(function(node) {
-            node.lock();  // Lock the entire node
 
-            // Allow horizontal movement (x-axis) by unlocking x-position
-            node.position('x', node.position().x);  // Leave x unlocked
-        });
+        // cy.nodes().forEach(function(node) {
+        //     node.lock();  // Lock nodes to prevent movement
+        // });
     })
-    .catch(error => console.error("Error fetching graph data:", error));
-});
+   

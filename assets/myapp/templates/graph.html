@@ -15,6 +15,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
 <script>
     var projectId = "{{ project_id }}";  
+    const nodes = JSON.parse('{{ nodes|escapejs }}');
+    
 </script>
 
 
@@ -70,6 +72,49 @@
 
                 </script>
             </div>
+            <div class="node-attribute" id="cites-container" style="display: none;">
+                <p>Cites:</p>
+                <select id="cites" name="cites" multiple>
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const secondaryRadio = document.getElementById("secondary");
+                    const primaryRadio = document.getElementById("primary");
+                    const citesContainer = document.getElementById("cites-container");
+            
+                    // Show/hide cites field based on selection
+                    function toggleCitesField() {
+                        citesContainer.style.display = secondaryRadio.checked ? "block" : "none";
+                    }
+            
+                    secondaryRadio.addEventListener("change", toggleCitesField);
+                    primaryRadio.addEventListener("change", toggleCitesField);
+            
+                    
+            
+                    // Populate cites dropdown
+                    function populateCitesDropdown() {
+                        const citesDropdown = document.getElementById("cites");
+                        citesDropdown.innerHTML = "";  // Clear existing options
+            
+                        // Populate the dropdown with nodes
+                        nodes.forEach(node => {
+                            const option = document.createElement("option");
+                            option.value = node.data.id;
+                            option.textContent = node.data.label;
+                            citesDropdown.appendChild(option);
+                        });
+                    }
+            
+                    // Populate cites dropdown on page load
+                    populateCitesDropdown();
+                });
+            </script>
+            
+            
+
             <div class="node-attribute">
                 <p>Author/creator:</p>
                 <input type="text" id="author" name="author">
@@ -82,6 +127,13 @@
                 <p>Date discovered:</p>
                 <input type="date" id="date-discovered" name="date_discovered">
             </div>
+            <script>
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date().toISOString().split('T')[0];
+                // Set max attribute for both date inputs
+                document.getElementById("date-created").max = today;
+                document.getElementById("date-discovered").max = today;
+            </script>
             <div class="node-attribute">
                 <p>Language of source:</p>
                 <input type="text" id="language" name="language">

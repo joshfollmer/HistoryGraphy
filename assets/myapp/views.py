@@ -178,7 +178,7 @@ def create_project(request):
                 error_message = "Failed to create project."
                 return render(request, 'index.html', {'error_message': error_message})
 
-def get_nodes(request, project_id):
+def get_nodes(project_id):
     driver = get_neo4j_driver()
     session = driver.session()
 
@@ -194,12 +194,12 @@ def get_nodes(request, project_id):
     
     # Process each record from the query result
     for record in result:
-        print("Processing Record:", record)  # Debugging: print each record being processed
+        #print("Processing Record:", record)  # Debugging: print each record being processed
         neighbor_node = record["neighbor"]
         
         if neighbor_node:  # Ensure there is a neighbor node
             node_title = neighbor_node.get("title", "Untitled")  # Default to "Untitled" if no title exists
-            print(f"Adding Neighbor Node: {node_title}")  # Debugging: Check the title
+            #print(f"Adding Neighbor Node: {node_title}")  # Debugging: Check the title
 
             date_created = neighbor_node.get("date_created", None)
             date_discovered = neighbor_node.get("date_discovered", None)
@@ -222,20 +222,24 @@ def get_nodes(request, project_id):
                     "url": neighbor_node.get("url", ""),
                     "contributor": neighbor_node.get("contributor", ""),
                     "language": neighbor_node.get("language", ""),
-                    "tags": neighbor_node.get("tags", []),  # Assuming tags are stored as a list
+                    "tags": neighbor_node.get("tags", []),  
                 }
             })
 
     session.close()
 
     # Debugging: print the final list of neighbors
-    print("Processed neighbors:", neighbors)
+    #print("Processed neighbors:", neighbors)
+
+    neighbors_json = json.dumps(neighbors)
+
+    return neighbors_json
 
     # Return the nodes (neighbors) as JSON to the frontend
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({"nodes": neighbors})
+    # if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    #     return JsonResponse({"nodes": neighbors})
 
-    return render(request, "graph.html", {"project_id": project_id})
+    # return render(request, "graph.html", {"project_id": project_id})
 
 
 @csrf_exempt
@@ -356,4 +360,8 @@ def create_node(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 def view_project(request, project_id):
-    return render(request, "graph.html", {"project_id": project_id})
+    nodes = get_nodes(project_id)
+    return render(request, "graph.html", {
+        "project_id": project_id,
+        "nodes": nodes  # Include nodes in the context
+    })

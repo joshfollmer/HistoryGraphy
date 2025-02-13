@@ -28,7 +28,7 @@ urlpatterns = [
     path('login/', views.login_user, name='login-user'),
     path('logout_user/', views.logout_user, name='logout_user'),
     path('create-project/', views.create_project, name ='create-project'),
-    path('get_nodes/<int:project_id>/', views.get_nodes, name='get_nodes'),
+    #path('get_nodes/<int:project_id>/', views.get_nodes, name='get_nodes'),
     path('create-node/', views.create_node, name = 'create-node'),
     path('project/<int:project_id>/', views.view_project, name = 'view_project')
 
