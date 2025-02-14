@@ -174,6 +174,100 @@ form {
     background-color: rgba(0, 128, 128, 0.932);
 }
 
+.node-attribute select{
+    margin: 0;
+    width: 80%;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    padding: 0.8em; /* Makes input field bigger */
+    flex: 2;
+}
+
+/* Style for the cites container */
+#cites-container {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+    padding: 15px;
+}
+
+
+.cites-selector {
+    padding: 8px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    width: fit-content;
+}
+
+.cites-dropdown {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 5px;
+    max-height: 150px;
+    overflow-y: auto;
+    width: 200px;
+}
+
+.cites-item {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.cites-item:hover {
+    background: #ddd;
+}
+
+.cites-setup{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.selected-cites {
+    width: 100%;
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.cite-tag {
+    display: flex;
+    align-items: center;
+    background: #007bff;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.remove-cite {
+    margin-left: 5px;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    padding: 2px 5px;
+}
+
+    
+    
+    
+
+
+
+
+/* Optional: Add hover effect to the dropdown */
+#cites:hover {
+    border-color: #888;
+}
+
 
 .buttons {
     display: flex;          /* Enables flexbox */

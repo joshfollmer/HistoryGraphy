@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import connection 
-from .models import Project, Source
+from .models  import Project, SecondarySource, PrimarySource
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from neo4j import GraphDatabase
@@ -235,11 +235,6 @@ def get_nodes(project_id):
 
     return neighbors_json
 
-    # Return the nodes (neighbors) as JSON to the frontend
-    # if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-    #     return JsonResponse({"nodes": neighbors})
-
-    # return render(request, "graph.html", {"project_id": project_id})
 
 
 @csrf_exempt
@@ -270,10 +265,8 @@ def create_node(request):
         
         data = json.loads(request.body)
         
-        title = data.get('title')
-        if not title:
-            return JsonResponse({'error': 'Title is required'}, status=400)
         
+       
         date_created_str = data.get('date_created')
         date_discovered_str = data.get('date_discovered', date_created_str)
 
@@ -283,21 +276,27 @@ def create_node(request):
         project_id = int(data.get('project_id'))
         
 
+        is_primary = data.get('is_primary', False)
+        if(is_primary):
+            node = PrimarySource()
+        else:
+            node = SecondarySource()
 
-        node = Source(
-            title=title,
-            author=data.get('author', 'Unknown'),
-            date_created=date_created_datetime,
-            date_discovered=date_discovered_datetime,
-            is_primary=data.get('is_primary', False),
-            description=data.get('description'),
-            url=data.get('url'),
-            language=data.get('language'),
-            tags=data.get('tags', []),
-            contributor= request.user.username
-        )
+
+        node.title=data.get('title', 'Untitled'),
+        node.author=data.get('author', 'Unknown'),
+        node.date_created=date_created_datetime,
+        node.date_discovered=date_discovered_datetime,
+        node.is_primary=data.get('is_primary', False),
+        node.description=data.get('description'),
+        node.url=data.get('url'),
+        node.language=data.get('language'),
+        node.tags=data.get('tags', []),
+        node.contributor= request.user.username
+        cites = data.get('selectedCites', [])
         
-
+        
+        
         driver = get_neo4j_driver()
         session = driver.session()
 
@@ -316,7 +315,11 @@ def create_node(request):
             tags: $tags, 
             contributor: $contributor
         })"""
-        "MERGE (p)-[:CONNECTED_TO]->(n)"
+        "MERGE (p)-[:CONNECTED_TO]->(n) "
+        "WITH n "
+        "UNWIND $selectedCites AS citeName "
+        "MATCH (cited:Source {title: citeName}) "
+        "MERGE (n)-[:CITES]->(cited) "
         "RETURN n.title AS node_id"
         )
         
@@ -331,7 +334,8 @@ def create_node(request):
             'language': node.language,
             'tags': node.tags if isinstance(node.tags, list) else [],
             'contributor': node.contributor,
-            'projectId': project_id
+            'projectId': project_id,
+            'selectedCites': list(cites)  # Convert Set to List
         }
 
         print("Running Query:", query)
@@ -363,5 +367,5 @@ def view_project(request, project_id):
     nodes = get_nodes(project_id)
     return render(request, "graph.html", {
         "project_id": project_id,
-        "nodes": nodes  # Include nodes in the context
+        "nodes": nodes  
     })

@@ -44,77 +44,21 @@
                 <label for="primary" class="node-type-primary">Primary</label>
                 <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
                 <label for="secondary" class="node-type-secondary">Secondary</label>
-                <script>
-                    document.addEventListener("DOMContentLoaded", function () {
-                    const labels = document.querySelectorAll(".node-attribute label");
-                    const radios = document.querySelectorAll("input[name='source_type']");
-
-                    labels.forEach(label => {
-                        label.addEventListener("click", function () {
-                            // Remove 'selected' class from all labels
-                            labels.forEach(l => l.classList.remove("selected"));
-
-                            // Add 'selected' class to clicked label
-                            this.classList.add("selected");
-
-                            // Set the associated radio button as checked
-                            document.getElementById(this.getAttribute("for")).checked = true;
-                        });
-                    });
-
-                    // Ensure correct label is marked as selected on page load
-                    radios.forEach(radio => {
-                        if (radio.checked) {
-                            document.querySelector(`label[for="${radio.id}"]`).classList.add("selected");
-                        }
-                    });
-                });
-
-                </script>
+                
             </div>
             <div class="node-attribute" id="cites-container" style="display: none;">
-                <p>Cites:</p>
-                <select id="cites" name="cites" multiple>
-                    <!-- Options will be populated dynamically -->
-                </select>
+                
+                <div id="cites-setup" class = "cites-setup">
+                    <p>Cites:</p>
+                    <div id="cites-selector" class="cites-selector">Select a Source</div>
+                    <div id="cites-dropdown" class="cites-dropdown" style="display: none;"></div>
+                </div>
+                <div id="selected-cites" class="selected-cites"></div>
             </div>
-            <script>
-                document.addEventListener("DOMContentLoaded", function () {
-                    const secondaryRadio = document.getElementById("secondary");
-                    const primaryRadio = document.getElementById("primary");
-                    const citesContainer = document.getElementById("cites-container");
             
-                    // Show/hide cites field based on selection
-                    function toggleCitesField() {
-                        citesContainer.style.display = secondaryRadio.checked ? "block" : "none";
-                    }
-            
-                    secondaryRadio.addEventListener("change", toggleCitesField);
-                    primaryRadio.addEventListener("change", toggleCitesField);
-            
-                    
-            
-                    // Populate cites dropdown
-                    function populateCitesDropdown() {
-                        const citesDropdown = document.getElementById("cites");
-                        citesDropdown.innerHTML = "";  // Clear existing options
-            
-                        // Populate the dropdown with nodes
-                        nodes.forEach(node => {
-                            const option = document.createElement("option");
-                            option.value = node.data.id;
-                            option.textContent = node.data.label;
-                            citesDropdown.appendChild(option);
-                        });
-                    }
-            
-                    // Populate cites dropdown on page load
-                    populateCitesDropdown();
-                });
+            <script src="{% static 'js/citations.js' %}">
+                
             </script>
-            
-            
-
             <div class="node-attribute">
                 <p>Author/creator:</p>
                 <input type="text" id="author" name="author">

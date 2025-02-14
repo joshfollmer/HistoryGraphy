@@ -1,6 +1,8 @@
 document.getElementById('create-node-form').addEventListener('submit', function(e) {
     e.preventDefault();
 
+    
+
     const title = document.getElementById('node-name').value;
     const sourceType = document.querySelector('input[name="source_type"]:checked') ? document.querySelector('input[name="source_type"]:checked').value : null;
     const author = document.getElementById('author').value;
@@ -10,6 +12,11 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     const url = document.getElementById('link').value;
     const description = document.getElementById('description').value;
 
+    const citesContainer = document.getElementById("cites-container");
+    const secondaryRadio = document.getElementById("secondary");
+
+
+    
     // Validate form
     if (!title || !dateCreated || !author || !language) {
         alert('Please fill out all required fields');
@@ -20,6 +27,13 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         dateDiscovered = dateCreated;
     }
 
+    
+    if(!(citesContainer.style.display = secondaryRadio.checked)){
+        selectedCites = [];
+    }
+    
+    
+    
 
     // Create node object
     const newNode = {
@@ -32,7 +46,8 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         url,
         language,
         tags,
-        project_id : projectId
+        project_id : projectId,
+        selectedCites : Array.from(selectedCites)
     };
 
     // Send data to Django server
