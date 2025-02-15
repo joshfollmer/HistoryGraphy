@@ -3,10 +3,11 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // Sort nodes by date_discovered (ascending order)
     const sortedNodes = nodes.sort((a, b) => {
-        const dateA = new Date(a.data.date_discovered).getFullYear();
-        const dateB = new Date(b.data.date_discovered).getFullYear();
-        return dateA - dateB;  // Sorting from earliest to latest
+        const dateA = a.data.date_discovered ? new Date(a.data.date_discovered).getFullYear() : 0;
+        const dateB = b.data.date_discovered ? new Date(b.data.date_discovered).getFullYear() : 0;
+        return dateA - dateB;
     });
+    
 
     let yearPositions = {};  // Store assigned Y positions for each year
     let xSpacing = 150;  // Horizontal spacing between nodes in the same year

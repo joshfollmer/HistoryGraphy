@@ -94,5 +94,4 @@ document.getElementById('create-node-form').addEventListener('submit', function(
                 layout: { name: 'grid', rows: 2 }
             });
         })
-        .catch(error => console.error('Error:', error));
     });

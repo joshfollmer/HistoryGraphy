@@ -236,27 +236,10 @@ def get_nodes(project_id):
     return neighbors_json
 
 
+#CODE TO DELETE A NODE:
+# MATCH (n:Source {title: })
+# DETACH DELETE n;
 
-@csrf_exempt
-def save_nodes(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        nodes_data = data.get('nodes', [])
-
-        for node_data in nodes_data:
-            
-            Source.objects.create(
-                name=node_data.get('name'),
-                source_type=node_data.get('sourceType'),
-                date_created=node_data.get('dateCreated'),
-                date_discovered=node_data.get('dateDiscovered'),
-                discovered_after_created=node_data.get('discoveredAfterCreated'),
-                tags=node_data.get('tags')  
-            )
-
-        return JsonResponse({'success': True, 'message': 'Nodes saved successfully'})
-
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
 
 
 
@@ -274,6 +257,8 @@ def create_node(request):
         date_discovered_datetime = datetime.strptime(date_discovered_str, '%Y-%m-%d').date()
 
         project_id = int(data.get('project_id'))
+
+        
         
 
         is_primary = data.get('is_primary', False)
@@ -283,19 +268,22 @@ def create_node(request):
             node = SecondarySource()
 
 
-        node.title=data.get('title', 'Untitled'),
-        node.author=data.get('author', 'Unknown'),
-        node.date_created=date_created_datetime,
-        node.date_discovered=date_discovered_datetime,
-        node.is_primary=data.get('is_primary', False),
-        node.description=data.get('description'),
-        node.url=data.get('url'),
-        node.language=data.get('language'),
-        node.tags=data.get('tags', []),
+        node.title=data.get('title', 'Untitled')
+        node.author=data.get('author', 'Unknown')
+        node.date_created=date_created_datetime
+        node.date_discovered=date_discovered_datetime
+        node.is_primary=data.get('is_primary', False)
+        node.description=data.get('description')
+        node.url=data.get('url')
+        node.language=data.get('language')
+        node.tags=data.get('tags', [])
         node.contributor= request.user.username
         cites = data.get('selectedCites', [])
         
-        
+        if isinstance(node.title, list):
+            print('ERROR: list')
+            return JsonResponse({'error': 'Invalid request'}, status=400)
+            
         
         driver = get_neo4j_driver()
         session = driver.session()
