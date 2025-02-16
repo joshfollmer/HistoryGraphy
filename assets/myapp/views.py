@@ -171,69 +171,93 @@ def create_project(request):
 
 
             
-            return view_project(request, project_id)
+            return redirect(f'/project/{project_id}/')
 
         else:
                 # Handle the case where the insert fails
                 error_message = "Failed to create project."
                 return render(request, 'index.html', {'error_message': error_message})
+        
+
 
 def get_nodes(project_id):
     driver = get_neo4j_driver()
     session = driver.session()
 
-    # Query to get the project node and its neighbors
+    # Query to get the project node, its neighbors, and the relationships (edges)
     query = """
-    MATCH (p:Project {project_id: $project_id})-[:CONNECTED_TO]-(neighbor)
-    RETURN neighbor
+    MATCH (p:Project {project_id: $project_id})-[:CONNECTED_TO]->(neighbor)
+    OPTIONAL MATCH (neighbor)-[r:CITES]->(cited_neighbor)
+    RETURN p, neighbor, cited_neighbor, type(r) AS relationship_type
     """
-    result = session.run(query, project_id=project_id)
 
+
+
+    result = session.run(query, project_id=project_id)
     
-    neighbors = []
-    
+    added_nodes = set()
+    nodes = []
+    edges = []
+
     # Process each record from the query result
     for record in result:
-        #print("Processing Record:", record)  # Debugging: print each record being processed
-        neighbor_node = record["neighbor"]
         
+        neighbor_node = record["neighbor"]
+        cited = record["cited_neighbor"]
+
         if neighbor_node:  # Ensure there is a neighbor node
             node_title = neighbor_node.get("title", "Untitled")  # Default to "Untitled" if no title exists
-            #print(f"Adding Neighbor Node: {node_title}")  # Debugging: Check the title
+            
+            # Because of how the query gets returned, if we don't do this check it will process each edge as a new node
+            if node_title not in added_nodes:
+                date_created = neighbor_node.get("date_created", None)
+                date_discovered = neighbor_node.get("date_discovered", None)
 
-            date_created = neighbor_node.get("date_created", None)
-            date_discovered = neighbor_node.get("date_discovered", None)
+                # If the date fields exist, convert them to string (ISO format)
+                if date_created:
+                    date_created = date_created.isoformat()
+                if date_discovered:
+                    date_discovered = date_discovered.isoformat()
 
-            # If the date fields exist, convert them to string (ISO format)
-            if date_created:
-                date_created = date_created.isoformat()
-            if date_discovered:
-                date_discovered = date_discovered.isoformat()
-            # Collect all properties of the neighbor node
-            neighbors.append({
-                "data": {
-                    "id": node_title,  # Use title as the ID
-                    "label": node_title,  # Use title as the label
-                    "author": neighbor_node.get("author", "Unknown"),
-                    "date_created": date_created,
-                    "date_discovered": date_discovered,
-                    "is_primary": neighbor_node.get("is_primary", False),
-                    "description": neighbor_node.get("description", ""),
-                    "url": neighbor_node.get("url", ""),
-                    "contributor": neighbor_node.get("contributor", ""),
-                    "language": neighbor_node.get("language", ""),
-                    "tags": neighbor_node.get("tags", []),  
-                }
-            })
+                # Collect node data for the neighbor
+                nodes.append({
+                    "data": {
+                        "id": node_title,  # Use title as the ID
+                        "label": node_title,  # Use title as the label
+                        "author": neighbor_node.get("author", "Unknown"),
+                        "date_created": date_created,
+                        "date_discovered": date_discovered,
+                        "is_primary": neighbor_node.get("is_primary", False),
+                        "description": neighbor_node.get("description", ""),
+                        "url": neighbor_node.get("url", ""),
+                        "contributor": neighbor_node.get("contributor", ""),
+                        "language": neighbor_node.get("language", ""),
+                        "tags": neighbor_node.get("tags", []),  
+                    }
+                })
+
+                added_nodes.add(node_title)
+
+            if(cited):
+                edges.append({
+                    "data": {
+                        "source": node_title,  
+                        "target": cited["title"]  
+                    }
+                })
 
     session.close()
 
-    # Debugging: print the final list of neighbors
-    #print("Processed neighbors:", neighbors)
 
-    neighbors_json = json.dumps(neighbors)
 
-    return neighbors_json
+    
+    result_json = json.dumps({
+        "nodes": nodes,
+        "edges": edges
+    })
+
+    return result_json
+
 
 
 #CODE TO DELETE A NODE:
@@ -288,27 +312,40 @@ def create_node(request):
         driver = get_neo4j_driver()
         session = driver.session()
 
+        query_check = """
+        MATCH (n:Source {title: $title})
+        RETURN n
+        LIMIT 1
+        """
+        result = session.run(query_check, {'title': node.title})
+        existing_node = result.single()
+
+        if existing_node:
+            return JsonResponse({'error': 'Node with the same title already exists'}, status=400)
+
+
         query = (
-        "MATCH (p:Project)"
-        "WHERE p.project_id = $projectId "
-        """CREATE (n:Source {
-            title: $title, 
-            author: $author, 
-            date_created: $date_created, 
-            date_discovered: $date_discovered, 
-            is_primary: $is_primary, 
-            description: $description, 
-            url: $url, 
-            language: $language, 
-            tags: $tags, 
-            contributor: $contributor
-        })"""
-        "MERGE (p)-[:CONNECTED_TO]->(n) "
-        "WITH n "
-        "UNWIND $selectedCites AS citeName "
-        "MATCH (cited:Source {title: citeName}) "
-        "MERGE (n)-[:CITES]->(cited) "
-        "RETURN n.title AS node_id"
+        """MERGE (n:Source {title: $title})
+        ON CREATE SET 
+            n.author = $author, 
+            n.date_created = $date_created, 
+            n.date_discovered = $date_discovered, 
+            n.is_primary = $is_primary, 
+            n.description = $description, 
+            n.url = $url, 
+            n.language = $language, 
+            n.tags = $tags, 
+            n.contributor = $contributor
+        ON MATCH SET
+            n.author = COALESCE(n.author, $author),
+            n.date_created = COALESCE(n.date_created, $date_created),
+            n.date_discovered = COALESCE(n.date_discovered, $date_discovered),
+            n.is_primary = COALESCE(n.is_primary, $is_primary),
+            n.description = COALESCE(n.description, $description),
+            n.url = COALESCE(n.url, $url),
+            n.language = COALESCE(n.language, $language),
+            n.tags = COALESCE(n.tags, $tags),
+            n.contributor = COALESCE(n.contributor, $contributor)"""
         )
         
         params = {
@@ -352,8 +389,8 @@ def create_node(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 def view_project(request, project_id):
-    nodes = get_nodes(project_id)
+    graph_data = get_nodes(project_id)
     return render(request, "graph.html", {
         "project_id": project_id,
-        "nodes": nodes  
+        "graphData": graph_data   
     })

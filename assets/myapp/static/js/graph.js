@@ -1,37 +1,32 @@
 document.addEventListener("DOMContentLoaded", function () {
-    console.log(nodes);
-    
-    // Sort nodes by date_discovered (ascending order)
-    const sortedNodes = nodes.sort((a, b) => {
-        const dateA = a.data.date_discovered ? new Date(a.data.date_discovered).getFullYear() : 0;
-        const dateB = b.data.date_discovered ? new Date(b.data.date_discovered).getFullYear() : 0;
-        return dateA - dateB;
-    });
-    
 
+    // Assuming `nodes` and `edges` are already available in the context
     let yearPositions = {};  // Store assigned Y positions for each year
     let xSpacing = 150;  // Horizontal spacing between nodes in the same year
+    let randomXRange = 100;  // Maximum random offset for x position
 
     // Assign y-position based on unique years
-    sortedNodes.forEach((node) => {
+    nodes.forEach((node) => {
         const year = new Date(node.data.date_discovered).getFullYear();
-        
+
         // If the year is encountered for the first time, initialize the Y position and count
         if (!yearPositions[year]) {
             yearPositions[year] = { yPos: Object.keys(yearPositions).length * 100, count: 0 };
         }
 
-        // Determine x position (shift horizontally if there are multiple nodes in the same year)
-        const xOffset = yearPositions[year].count * xSpacing;
+        // Generate random xOffset within a range
+        const xOffset = (Math.random() - 0.5) * randomXRange + yearPositions[year].count * xSpacing;
+
         node.position = { x: 100 + xOffset, y: yearPositions[year].yPos };
 
         // Increment counter for this year (for horizontal shifting)
         yearPositions[year].count += 1;
     });
 
+    // Initialize Cytoscape
     var cy = cytoscape({
         container: document.getElementById("cy"),
-        elements: sortedNodes,  // Use the sorted nodes
+        elements: [...nodes, ...edges],  // Include both nodes and edges
 
         style: [
             {
@@ -68,7 +63,9 @@ document.addEventListener("DOMContentLoaded", function () {
         minZoom: 0.1,
         maxZoom: 2.0,
     });
-     cy.nodes().forEach(function(node) {
-            node.lock();  // Lock nodes to prevent movement
-        });
+
+    // Lock nodes to prevent movement
+    cy.nodes().forEach(function(node) {
+        node.lock();  // Lock nodes to prevent movement
+    });
 });

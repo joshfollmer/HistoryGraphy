@@ -15,7 +15,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
 <script>
     var projectId = "{{ project_id }}";  
-    const nodes = JSON.parse('{{ nodes|escapejs }}');
+    
+    const graphData = JSON.parse('{{ graphData|escapejs }}');
+    
+   
+    const nodes = graphData.nodes;
+    const edges = graphData.edges;
+
+    
+
     
 </script>
 
