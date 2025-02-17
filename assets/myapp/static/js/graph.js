@@ -1,23 +1,23 @@
 document.addEventListener("DOMContentLoaded", function () {
-
-    // Assuming `nodes` and `edges` are already available in the context
-    let yearPositions = {};  // Store assigned Y positions for each year
+    let yearPositions = {};  // Store assigned X positions for each year
     let xSpacing = 150;  // Horizontal spacing between nodes in the same year
-    let randomXRange = 100;  // Maximum random offset for x position
+    let randomXRange = 500;  // Maximum random offset for x position
 
-    // Assign y-position based on unique years
+    // Find the minimum year to normalize y positions
+    let minYear = Math.min(...nodes.map(node => new Date(node.data.date_discovered).getFullYear()));
+    let scaleFactor = 15;  // Adjust this to control vertical spacing
+
     nodes.forEach((node) => {
         const year = new Date(node.data.date_discovered).getFullYear();
+        let yPosition = (year - minYear) * scaleFactor;  // Scale based on year difference
 
-        // If the year is encountered for the first time, initialize the Y position and count
+        // Handle horizontal spacing
         if (!yearPositions[year]) {
-            yearPositions[year] = { yPos: Object.keys(yearPositions).length * 100, count: 0 };
+            yearPositions[year] = { count: 0 };
         }
+        const xOffset = (Math.random()) * randomXRange + yearPositions[year].count * xSpacing;
 
-        // Generate random xOffset within a range
-        const xOffset = (Math.random() - 0.5) * randomXRange + yearPositions[year].count * xSpacing;
-
-        node.position = { x: 100 + xOffset, y: yearPositions[year].yPos };
+        node.position = { x: 100 + xOffset, y: yPosition };
 
         // Increment counter for this year (for horizontal shifting)
         yearPositions[year].count += 1;
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Initialize Cytoscape
     var cy = cytoscape({
         container: document.getElementById("cy"),
-        elements: [...nodes, ...edges],  // Include both nodes and edges
+        elements: [...nodes, ...edges],  
 
         style: [
             {
@@ -34,6 +34,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 style: {
                     "background-color": function (node) {
                         return node.data('is_primary') ? '#006400' : '#008080';  // Green for primary, blue for secondary
+                    },
+                    "width": function (node) {
+                        let inDegree = node.incomers('edge').sources().length; // Count children
+                        return Math.max(25, 10 + inDegree * 5); 
+                    },
+                    "height": function (node) {
+                        let inDegree = node.incomers('edge').sources().length; // Count children
+                        return Math.max(25, 10 + inDegree * 5); 
                     },
                     "label": "data(label)",
                     "color": "#fff",
@@ -66,6 +74,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Lock nodes to prevent movement
     cy.nodes().forEach(function(node) {
-        node.lock();  // Lock nodes to prevent movement
+        node.lock();
     });
 });
