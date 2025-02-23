@@ -1,11 +1,15 @@
 document.addEventListener("DOMContentLoaded", function() {
     // Add event listener to cancel button
     document.getElementById('cancel-button').addEventListener('click', function() {
-        document.getElementById('popup').checked = false; // Uncheck the checkbox to close the popup
+        document.getElementById('popup').checked = false; 
     });
 
-    // Optional: Add event listener to create button if needed
+   
     document.getElementById('create-button').addEventListener('click', function() {
-        document.getElementById('popup').checked = false; // Uncheck the checkbox to close the popup
+        document.getElementById('popup').checked = false; 
+    });
+
+    document.getElementById('close-button').addEventListener('click', function() {
+        document.getElementById('source-info-popup').checked = false; 
     });
 });

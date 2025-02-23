@@ -114,6 +114,58 @@
         </form>
     </div>
 </div>
+
+
+<input type="checkbox" id="source-info-popup" style="display:none">
+<div class="source-info-overlay"></div>
+<div class="source-info-panel">
+    <h1>Source</h1>
+    <div class="source-info">
+        <div class="node-attribute">
+            <p><strong>Title:</strong></p>
+            <p id="source-title"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Source type:</strong></p>
+            <p id="source-type"></p>  
+        </div>
+        
+        <div class="node-attribute">
+            <p><strong>Author/creator:</strong></p>
+            <p id="source-author"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Date created:</strong></p>
+            <p id="source-date-created"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Date discovered:</strong></p>
+            <p id="source-date-discovered"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Language of source:</strong></p>
+            <p id="source-language"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Link:</strong></p>
+            <p id="source-link"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Description:</strong></p>
+            <p id="source-description"></p>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Tags:</strong></p>
+            <ul id="source-tags"></ul>
+        </div>
+        <div class="buttons">
+            <input type="button" class="source-info-close" id="close-button" value="Close">
+        </div>
+        <script src="{% static 'js/popup_close.js' %}"></script>
+    </div>
+</div>
+
+
 {% endblock %}
 
 
@@ -155,6 +207,7 @@
 
     function checkEnter(event) {
         if (event.key === 'Enter') {
+            event.preventDefault();
             addTag();
         }
     }

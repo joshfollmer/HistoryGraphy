@@ -52,46 +52,26 @@ document.getElementById('create-node-form').addEventListener('submit', function(
 
     // Send data to Django server
     fetch('/create-node/', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}'
-    },
-    body: JSON.stringify(newNode)
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(newNode)
     })
     .then(response => {
-        console.log("Response status:", response.status);
-        return response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();  
     })
     .then(data => {
         console.log("Response data:", data);
+    
+        add_node(data);
     })
     .catch(error => {
         console.error("Fetch error:", error);
-    })
-
-        .then(response => response.json())
-        .then(data => {
-            // Render the node on the graph
-            const cy = cytoscape({
-                container: document.getElementById('cy'),
-                elements: [
-                    {
-                        data: {  label: data.title }
-                    }
-                ],
-                style: [
-                    {
-                        selector: 'node',
-                        style: {
-                            'background-color': '#007bff',
-                            'label': 'data(label)',
-                            'width': '30px',
-                            'height': '30px'
-                        }
-                    }
-                ],
-                layout: { name: 'grid', rows: 2 }
-            });
-        })
     });
+    
+});

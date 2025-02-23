@@ -272,46 +272,43 @@ def create_node(request):
         
         data = json.loads(request.body)
         
-        
-       
+        # Date handling
         date_created_str = data.get('date_created')
         date_discovered_str = data.get('date_discovered', date_created_str)
 
         date_created_datetime = datetime.strptime(date_created_str, '%Y-%m-%d').date()
         date_discovered_datetime = datetime.strptime(date_discovered_str, '%Y-%m-%d').date()
 
-        project_id = int(data.get('project_id'))
-
+        project_id = int(data.get('project_id'))  # Project ID
         
-        
-
         is_primary = data.get('is_primary', False)
         if(is_primary):
             node = PrimarySource()
         else:
             node = SecondarySource()
 
-
-        node.title=data.get('title', 'Untitled')
-        node.author=data.get('author', 'Unknown')
-        node.date_created=date_created_datetime
-        node.date_discovered=date_discovered_datetime
-        node.is_primary=data.get('is_primary', False)
-        node.description=data.get('description')
-        node.url=data.get('url')
-        node.language=data.get('language')
-        node.tags=data.get('tags', [])
-        node.contributor= request.user.username
+        # Setting the node properties
+        node.title = data.get('title', 'Untitled')
+        node.author = data.get('author', 'Unknown')
+        node.date_created = date_created_datetime
+        node.date_discovered = date_discovered_datetime
+        node.is_primary = data.get('is_primary', False)
+        node.description = data.get('description')
+        node.url = data.get('url')
+        node.language = data.get('language')
+        node.tags = data.get('tags', [])
+        node.contributor = request.user.username
         cites = data.get('selectedCites', [])
         
         if isinstance(node.title, list):
             print('ERROR: list')
             return JsonResponse({'error': 'Invalid request'}, status=400)
-            
-        
+
+        # Neo4j connection setup
         driver = get_neo4j_driver()
         session = driver.session()
 
+        # Check if the node with the same title exists
         query_check = """
         MATCH (n:Source {title: $title})
         RETURN n
@@ -323,31 +320,28 @@ def create_node(request):
         if existing_node:
             return JsonResponse({'error': 'Node with the same title already exists'}, status=400)
 
-
+        # Query to create or update the node
         query = (
-        """MERGE (n:Source {title: $title})
-        ON CREATE SET 
-            n.author = $author, 
-            n.date_created = $date_created, 
-            n.date_discovered = $date_discovered, 
-            n.is_primary = $is_primary, 
-            n.description = $description, 
-            n.url = $url, 
-            n.language = $language, 
-            n.tags = $tags, 
-            n.contributor = $contributor
-        ON MATCH SET
-            n.author = COALESCE(n.author, $author),
-            n.date_created = COALESCE(n.date_created, $date_created),
-            n.date_discovered = COALESCE(n.date_discovered, $date_discovered),
-            n.is_primary = COALESCE(n.is_primary, $is_primary),
-            n.description = COALESCE(n.description, $description),
-            n.url = COALESCE(n.url, $url),
-            n.language = COALESCE(n.language, $language),
-            n.tags = COALESCE(n.tags, $tags),
-            n.contributor = COALESCE(n.contributor, $contributor)"""
+            """
+        MATCH (p:Project)WHERE p.project_id = $projectId CREATE (n:Source {
+            title: $title,
+            author: $author,
+            date_created: $date_created,
+            date_discovered: $date_discovered,
+            is_primary: $is_primary,
+            description: $description,
+            url: $url,
+            language: $language,
+            tags: $tags,
+            contributor: $contributor
+        })MERGE (p)-[:CONNECTED_TO]->(n) 
+        WITH n UNWIND $selectedCites AS citeName 
+        MATCH (cited:Source {title: citeName}) 
+        MERGE (n)-[:CITES]->(cited) 
+        RETURN n.title AS node_id
+        """
         )
-        
+
         params = {
             'title': node.title,
             'author': node.author,
@@ -363,14 +357,11 @@ def create_node(request):
             'selectedCites': list(cites)  # Convert Set to List
         }
 
-        print("Running Query:", query)
-        print("With Params:", params)
-
-
-     
+        # Run the query to create or update the Source node
         session.run(query, params)
-        session.close()
+
        
+        
 
         # Return all the fields in the response
         return JsonResponse({
@@ -383,10 +374,12 @@ def create_node(request):
             'url': node.url,
             'language': node.language,
             'tags': node.tags,
-            'contributor' : node.contributor
+            'contributor': node.contributor,
+            'selectedCites': list(cites)
         })
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
 
 def view_project(request, project_id):
     graph_data = get_nodes(project_id)
