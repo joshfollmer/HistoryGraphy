@@ -47,7 +47,7 @@
                 <p id="node-name-error" style="color: red; display: none;">Title is required</p>
             </div>
             <div class="node-attribute">
-                <p>Source type:</p>
+                <p>Source Type:</p>
                 <input type="radio" id="primary" name="source_type" value="primary" style="display:none;">
                 <label for="primary" class="node-type-primary">Primary</label>
                 <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
@@ -98,13 +98,7 @@
                 <p>Description:</p>
                 <input type="text" id="description" name="description">
             </div>
-            <div class="node-attribute">
-                <p>Tags:</p>
-                <input type="text" id="tag-input" placeholder="Enter a tag" onkeydown="checkEnter(event)">
-                <button type="button" onclick="addTag()">+</button>
-                
-            </div>
-            <ul id="tags-list"></ul>
+           
             <div class="buttons">
                 <input type="submit" class="node-model-close" id="create-button" value="Create">
                 <input type="button" class="node-model-close" id="cancel-button" value="Cancel">
@@ -119,17 +113,43 @@
 <input type="checkbox" id="source-info-popup" style="display:none">
 <div class="source-info-overlay"></div>
 <div class="source-info-panel">
-    <h1>Source</h1>
+    <div class="source-info-header">
+        <h1>Source</h1>
+        <button class="close-button" id="close-button">&times;</button>
+    </div>
     <div class="source-info">
         <div class="node-attribute">
             <p><strong>Title:</strong></p>
             <p id="source-title"></p>
         </div>
         <div class="node-attribute">
-            <p><strong>Source type:</strong></p>
-            <p id="source-type"></p>  
+            <p><strong>Source Type:</strong></p>
+            
+            <label for="primary" class="node-type-primary-info">Primary</label>
+            
+            <label for="secondary" class="node-type-secondary-info">Secondary</label>
+            
         </div>
         
+        <div class="node-attribute" id="edit-cites-container" style="display: none;">
+                
+            <div id="edit-cites-setup" class = "edit-cites-setup">
+                <p>Cites:</p>
+                <div id="edit-cites-selector" class="edit-cites-selector">Select a Source</div>
+                <div id="edit-cites-dropdown" class="edit-cites-dropdown" style="display: none;"></div>
+            </div>
+            <div id="edit-selected-cites" class="edit-selected-cites"></div>
+        </div>
+        
+        <div class="node-attribute" id = "displayed-cites-container" style="display: none;">
+            <div id = "display-cites-setup" class = "display-cites-setup">
+                <p><strong>Cites:</strong></p>
+            </div>
+            <div id="displayed-cites" class="displayed-cites"></div>
+        </div>
+        
+            
+
         <div class="node-attribute">
             <p><strong>Author/creator:</strong></p>
             <p id="source-author"></p>
@@ -143,7 +163,7 @@
             <p id="source-date-discovered"></p>
         </div>
         <div class="node-attribute">
-            <p><strong>Language of source:</strong></p>
+            <p><strong>Language:</strong></p>
             <p id="source-language"></p>
         </div>
         <div class="node-attribute">
@@ -154,16 +174,17 @@
             <p><strong>Description:</strong></p>
             <p id="source-description"></p>
         </div>
-        <div class="node-attribute">
-            <p><strong>Tags:</strong></p>
-            <ul id="source-tags"></ul>
-        </div>
         <div class="buttons">
-            <input type="button" class="source-info-close" id="close-button" value="Close">
+            <input type="button" class="source-info-edit" id="edit-button" value="Edit">
+            <div id="edit-buttons" style="display:none;">
+                <input type="button" class="source-info-save" id="save-button" value="Save">
+                <input type="button" class="source-info-cancel" id="cancel-edit-button" value="Cancel">
+            </div>
         </div>
         <script src="{% static 'js/popup_close.js' %}"></script>
     </div>
 </div>
+
 
 
 {% endblock %}
@@ -171,39 +192,296 @@
 
 {% block extra_js %}
 <script>
-    let tags = [];
-    
-    function addTag() {
-        const tagInput = document.getElementById('tag-input');
-        const tagValue = tagInput.value.trim();
-        if (tagValue && !tags.includes(tagValue)) {
-            tags.push(tagValue);
-            updateTagsList();
-            tagInput.value = '';
+document.addEventListener("DOMContentLoaded", function() {
+    let editSelectedCites = new Set(); // Store selected nodes
+    const editCitesDropdown = document.getElementById("edit-cites-dropdown");
+    const editCitesContainer = document.getElementById("edit-cites-container");
+    const selectedEditCitesContainer = document.getElementById("edit-selected-cites");
+    const citesSelector = document.getElementById("edit-cites-selector");
+    citesSelector.addEventListener("click", toggleCitesDropdown);
+    const primaryLabel = document.querySelector('.node-type-primary-info');
+    const secondaryLabel = document.querySelector('.node-type-secondary-info');
+
+    // Edit mode toggling
+    const editButton = document.getElementById('edit-button');
+    const saveButton = document.getElementById('save-button');
+    const cancelButton = document.getElementById('cancel-edit-button');
+    const editButtons = document.getElementById('edit-buttons');
+
+    const fieldsToEdit = [
+        'source-title', 'source-type', 'source-author', 'source-date-created', 
+        'source-date-discovered', 'source-language', 'source-link', 'source-description'
+    ];
+
+    let originalValues = {}; // Store original values to revert on cancel
+    let isEditMode = false;
+
+
+    window.toggleLabel = function () {
+        
+        primaryLabel.style.display = 'none';
+        secondaryLabel.style.display = 'none';
+
+     
+        // Display the correct label based on source type
+        if (node.data().is_primary) {
+            primaryLabel.style.display = 'inline-block'; // Show Primary label
+        } else {
+            secondaryLabel.style.display = 'inline-block'; // Show Secondary label
         }
     }
 
-    function updateTagsList() {
-        const tagsList = document.getElementById('tags-list');
-        tagsList.innerHTML = '';
-        tags.forEach(tag => {
-            const li = document.createElement('li');
-            li.textContent = tag;
-            const removeBtn = document.createElement('button');
-            removeBtn.textContent = 'x';
-            removeBtn.onclick = () => removeTag(tag);
-            li.appendChild(removeBtn);
-            tagsList.appendChild(li);
+
+    function enterEditMode() {
+        isEditMode = true;
+        
+        // Hide displayed cites when editing
+        document.getElementById("displayed-cites-container").style.display = "none";
+       
+        fieldsToEdit.forEach(function (fieldId) {
+            const element = document.getElementById(fieldId);
+            console.log(element);
+            if (!element) return;
+            
+            originalValues[fieldId] = element.innerHTML;
+
+            if (fieldId === 'source-type') {
+                console.log(node.data().is_primary);
+                // Handle type selection
+                const container = element;
+                container.innerHTML = `
+                    <div class="node-attribute">
+                        <input type="radio" id="edit-primary" name="edit-source-type" value="primary">
+                        <label for="edit-primary" class="node-type-primary-info">Primary</label>
+                        
+                        <input type="radio" id="edit-secondary" name="edit-source-type" value="secondary">
+                        <label for="edit-secondary" class="node-type-secondary-info">Secondary</label>
+                    </div>
+                `;
+
+                const primaryRadio = document.getElementById('edit-primary');
+                const secondaryRadio = document.getElementById('edit-secondary');
+                
+                if (originalValues[fieldId].trim().toLowerCase() === 'primary') {
+                    primaryRadio.checked = true;
+                } else {
+                    secondaryRadio.checked = true;
+                    editCitesContainer.style.display = "flex";
+                    populateCitesDropdown();
+                }
+
+                primaryRadio.addEventListener("change", toggleCitesField);
+                secondaryRadio.addEventListener("change", toggleCitesField);
+            } else if (element.tagName === 'P') {
+                const content = element.innerText;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = content;
+                element.innerHTML = '';
+                element.appendChild(input);
+            }
+        });
+        secondaryLabel.style.display = 'flex';
+        primaryLabel.style.display = 'flex';
+
+        secondaryLabel.style.opacity = '0.6';
+        primaryLabel.style.opacity = '0.6';
+
+        editButton.style.display = 'none';
+        editButtons.style.display = 'block';
+    }
+
+
+    function exitEditMode(saveChanges) {
+        if (saveChanges) {
+            fieldsToEdit.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                // Check if the element exists and if it has the structure you're expecting
+                if (element && element.tagName === 'P' && element.firstChild && element.firstChild.tagName === 'INPUT') {
+                    originalValues[fieldId] = element.firstChild.value;
+                    element.innerHTML = element.firstChild.value;
+                }
+            });
+        } else {
+            fieldsToEdit.forEach(fieldId => {
+                const element = document.getElementById(fieldId);
+                // Check if the element exists before modifying it
+                if (element && originalValues[fieldId]) {
+                    element.innerHTML = originalValues[fieldId];
+                }
+            });
+
+            // Reset citations
+            editSelectedCites = new Set(originalValues["source-cites"]);
+            updateSelectedCites();
+        }
+
+        isEditMode = false;
+        editButton.style.display = 'block';
+        editButtons.style.display = 'none';
+        editCitesContainer.style.display = "none";
+
+        // Show displayed cites again if the source type is still secondary
+        updateDisplayedCites();
+        
+        toggleLabel(); // Ensure the correct label is displayed when exiting edit mode
+    }
+
+
+
+
+
+    function toggleCitesField() {
+        if (document.getElementById('edit-secondary').checked) {
+            editCitesContainer.style.display = "flex";
+        } else {
+
+            editCitesContainer.style.display = "none";
+        }
+    }
+
+    function toggleCitesDropdown() {
+        if (editCitesDropdown.style.display === "none" || editCitesDropdown.style.display === "") {
+            populateCitesDropdown(); // Ensure the dropdown is populated before showing
+            editCitesDropdown.style.display = "block";
+        } else {
+            editCitesDropdown.style.display = "none";
+        }
+    }
+
+    function populateCitesDropdown() {
+        editCitesDropdown.innerHTML = "";
+
+        let selectedNode = cy.$(":selected");
+        if (!selectedNode || selectedNode.length === 0) return;
+
+        // Get what this node CITES (outgoing edges)
+        let currentCites = new Set(selectedNode.outgoers("edge").targets().map(node => node.id()));
+
+        // Store original cites BEFORE modifying them
+        originalValues["source-cites"] = new Set(currentCites);
+        editSelectedCites = new Set(currentCites);
+
+        // Get all available sources (all nodes except the selected one)
+        let availableSources = cy.nodes().filter(node => node.id() !== selectedNode.id()).map(node => ({
+            id: node.id(),
+            label: node.data("label")
+        }));
+
+        availableSources.forEach(source => {
+            const option = document.createElement("div");
+            option.className = "edit-cites-option";
+            option.innerText = source.label;
+            option.dataset.nodeId = source.id;
+
+            // Highlight if already selected
+            if (editSelectedCites.has(source.id)) {
+                option.classList.add("selected");
+            }
+
+            option.addEventListener("click", function () {
+                let sourceId = source.id;
+                if (editSelectedCites.has(sourceId)) {
+                    editSelectedCites.delete(sourceId);
+                } else {
+                    editSelectedCites.add(sourceId);
+                }
+                updateSelectedCites();
+            });
+
+            editCitesDropdown.appendChild(option);
+        });
+
+        updateSelectedCites();
+    }
+
+
+
+    function updateSelectedCites() {
+        const selectedContainer = document.getElementById("edit-selected-cites");
+        selectedContainer.innerHTML = "";
+
+        editSelectedCites.forEach(sourceId => {
+            let node = cy.getElementById(sourceId);
+            if (node) {
+                let tag = document.createElement("div");
+                tag.className = "cite-tag";
+                tag.innerText = node.data("label");
+
+                let removeButton = document.createElement("span");
+                removeButton.innerHTML = "&times;";
+                removeButton.className = "remove-cite";
+                removeButton.addEventListener("click", function () {
+                    editSelectedCites.delete(sourceId);
+                    updateSelectedCites();
+                });
+
+                tag.appendChild(removeButton);
+                selectedContainer.appendChild(tag);
+            }
         });
     }
 
-    function removeTag(tag) {
-    const index = tags.indexOf(tag);
-    if (index > -1) {
-        tags.splice(index, 1);  // Modify array instead of reassigning
-    }
-    updateTagsList();
-}
+    window.updateDisplayedCites = function () {
+        const displayedCitesContainer = document.getElementById("displayed-cites-container");
+        const displayedCites = document.getElementById("displayed-cites");
+        const selectedNode = cy.$(":selected");
+
+        if (!selectedNode || selectedNode.length === 0) {
+            console.warn("No node selected.");
+            displayedCitesContainer.style.display = "none";
+            return;
+        }
+
+        
+        
+        if (node.data().is_primary) {
+            displayedCitesContainer.style.display = "none";
+            
+            return;
+        }
+        
+        // Continue displaying cites normally
+        displayedCitesContainer.style.display = "flex";
+        displayedCites.innerHTML = ""; // Clear previous cites
+
+        let citedNodes = selectedNode.outgoers("edge").targets();
+        if (citedNodes.length === 0) {
+            let noneText = document.createElement("p");
+            noneText.innerText = "None";
+            displayedCites.appendChild(noneText);
+        } else {
+            citedNodes.forEach(node => {
+                let tag = document.createElement("div");
+                tag.className = "cite-tag";
+                tag.innerText = node.data("label");
+
+                displayedCites.appendChild(tag);
+            });
+        }
+    };
+
+
+
+
+
+
+    editButton.addEventListener("click", enterEditMode);
+    saveButton.addEventListener("click", () => exitEditMode(true));
+    cancelButton.addEventListener("click", () => exitEditMode(false));
+
+
+
+    // Close button functionality (close the popup and exit edit mode)
+    document.getElementById('close-button').addEventListener('click', function() {
+        document.getElementById('source-info-popup').checked = false; 
+        if(isEditMode){
+            editCitesContainer.style.display = "none";
+            exitEditMode();
+        }
+        
+    });
+    });
 
     function checkEnter(event) {
         if (event.key === 'Enter') {

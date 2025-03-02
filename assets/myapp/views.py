@@ -232,7 +232,6 @@ def get_nodes(project_id):
                         "url": neighbor_node.get("url", ""),
                         "contributor": neighbor_node.get("contributor", ""),
                         "language": neighbor_node.get("language", ""),
-                        "tags": neighbor_node.get("tags", []),  
                     }
                 })
 
@@ -296,7 +295,6 @@ def create_node(request):
         node.description = data.get('description')
         node.url = data.get('url')
         node.language = data.get('language')
-        node.tags = data.get('tags', [])
         node.contributor = request.user.username
         cites = data.get('selectedCites', [])
         
@@ -332,7 +330,6 @@ def create_node(request):
             description: $description,
             url: $url,
             language: $language,
-            tags: $tags,
             contributor: $contributor
         })MERGE (p)-[:CONNECTED_TO]->(n) 
         WITH n UNWIND $selectedCites AS citeName 
@@ -351,7 +348,6 @@ def create_node(request):
             'description': node.description,
             'url': node.url,
             'language': node.language,
-            'tags': node.tags if isinstance(node.tags, list) else [],
             'contributor': node.contributor,
             'projectId': project_id,
             'selectedCites': list(cites)  # Convert Set to List
@@ -373,7 +369,6 @@ def create_node(request):
             'description': node.description,
             'url': node.url,
             'language': node.language,
-            'tags': node.tags,
             'contributor': node.contributor,
             'selectedCites': list(cites)
         })

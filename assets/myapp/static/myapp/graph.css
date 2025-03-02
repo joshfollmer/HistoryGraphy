@@ -146,7 +146,15 @@ form {
     margin-right: 10px; /* Adds spacing between label and input */
 }
 
-.node-attribute label {
+
+
+/* When label is selected, make it bold and full opacity */
+.node-attribute label.selected {
+    font-weight: bold;
+    opacity: 1 !important;/* Full opacity for selected label */
+}
+
+.node-type-primary{
     display: flex;
     align-items: center;
     justify-content: center;
@@ -159,19 +167,22 @@ form {
     color: white;
     transition: opacity 0.3s, font-weight 0.3s; /* Smooth transition */
     opacity: 0.6; /* Make non-selected labels semi-transparent */
-}
-
-/* When label is selected, make it bold and full opacity */
-.node-attribute label.selected {
-    font-weight: bold;
-    opacity: 1; /* Full opacity for selected label */
-}
-
-.node-type-primary {
     background-color: darkgreen;
 }
 
-.node-type-secondary {
+.node-type-secondary{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    cursor: pointer;
+    height: 2em;
+    line-height: 1.2;
+    color: white;
+    transition: opacity 0.3s, font-weight 0.3s; /* Smooth transition */
+    opacity: 0.6; /* Make non-selected labels semi-transparent */
     background-color: rgba(0, 128, 128, 0.932);
 }
 
@@ -189,84 +200,75 @@ form {
     flex: 2;
 }
 
-/* Style for the cites container */
-#cites-container {
-    flex-direction: column;
-    align-items: center;
-    margin-top: 10px;
-    padding: 15px;
-}
 
 
-.cites-selector {
-    padding: 8px;
-    background: #f0f0f0;
+.cites-selector,
+.edit-cites-selector {
+    padding: 6px 12px;
     border: 1px solid #ccc;
+    border-radius: 6px;
     cursor: pointer;
-    width: fit-content;
+    background-color: #f1f1f1;
 }
 
-.cites-dropdown {
+.cites-selector:hover,
+.edit-cites-selector:hover {
+    background-color: #e0e0e0;
+}
+
+.cites-dropdown,
+.edit-cites-dropdown {
     position: absolute;
-    background: white;
+    background-color: white;
     border: 1px solid #ccc;
-    padding: 5px;
-    max-height: 150px;
+    max-height: 200px;
     overflow-y: auto;
     width: 200px;
+    padding: 5px;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: none;
 }
 
-.cites-item {
-    padding: 5px;
+.cite-option,
+.edit-cites-option {
+    padding: 6px;
     cursor: pointer;
 }
 
-.cites-item:hover {
-    background: #ddd;
+.cite-option:hover {
+    background-color: #e9ecef;
 }
 
-.cites-setup{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-.selected-cites {
-    width: 100%;
-    margin-top: 10px;
+/* Selected citations styling */
+.selected-cites,
+.edit-selected-cites{
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
+    margin-top: 10px;
 }
 
-.cite-tag {
+.cite-tag{
+    background-color: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    background: #007bff;
-    color: white;
-    padding: 5px;
-    border-radius: 5px;
+    gap: 6px;
 }
 
-.remove-cite {
-    margin-left: 5px;
-    background: red;
-    color: white;
+.cite-tag button {
+    background: none;
     border: none;
+    color: white;
+    font-weight: bold;
     cursor: pointer;
-    padding: 2px 5px;
 }
 
-    
-    
-    
-
-
-
-
-/* Optional: Add hover effect to the dropdown */
-#cites:hover {
-    border-color: #888;
+.cite-tag button:hover {
+    color: #ffc107;
 }
 
 
@@ -450,7 +452,7 @@ button[type="button"] {
     z-index: 999;
 }
 
-.source-info-close {
+.source-info-edit {
     background-color: #007bff; 
     color: white;
     padding: 12px 20px; /* Add some padding for a larger clickable area */
@@ -464,6 +466,21 @@ button[type="button"] {
     width: 100%; /* Make it stretch to fit the width of the container */
 }
 
+.source-info-save,
+.source-info-cancel {
+    background-color: #007bff; 
+    color: white;
+    padding: 12px 20px; /* Add some padding for a larger clickable area */
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s ease-in-out; /* Smooth transition for hover effects */
+    margin-top: 20px; /* Add space above the button */
+
+}
+
 .source-info-close:hover {
     transform: scale(1.05); /* Slightly grow the button on hover for effect */
 }
@@ -471,4 +488,69 @@ button[type="button"] {
 .source-info-close:focus {
     outline: none; /* Remove default focus outline */
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* Add a custom blue focus ring */
+}
+
+
+.source-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+input[type="radio"] {
+    display: none;
+}
+
+input[type="radio"]:checked + label {
+
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.3);
+    opacity: 1;
+}
+
+
+
+#displayed-cites {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px; /* Add spacing between tags */
+}
+
+.node-type-primary-info{
+    background-color: darkgreen;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    cursor: pointer;
+    height: 2em;
+    line-height: 1.2;
+    color: white;
+
+
+}
+
+.node-type-secondary-info{
+    background-color: rgba(0, 128, 128, 0.932);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 15px;
+    border-radius: 5px;
+    font-size: clamp(0.75rem, 2vw, 1rem);
+    cursor: pointer;
+    height: 2em;
+    line-height: 1.2;
+    color: white;
+
+
+
 }

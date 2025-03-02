@@ -9,7 +9,5 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('popup').checked = false; 
     });
 
-    document.getElementById('close-button').addEventListener('click', function() {
-        document.getElementById('source-info-popup').checked = false; 
-    });
+   
 });
