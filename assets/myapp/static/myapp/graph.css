@@ -55,7 +55,9 @@
     z-index: 999;
 }
 
-.node-model {
+.node-model,
+#view-source-info-panel,
+#edit-source-info-panel {
     font-size: clamp(0.75rem, 2vw, 1rem);
     position: fixed;
     top: 50%;
@@ -242,7 +244,8 @@ form {
 
 /* Selected citations styling */
 .selected-cites,
-.edit-selected-cites{
+.info-selected-cites,
+.edit-selected-cites {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -516,13 +519,14 @@ input[type="radio"]:checked + label {
 
 
 
-#displayed-cites {
+#info-cites {
     display: flex;
     flex-wrap: wrap;
     gap: 5px; /* Add spacing between tags */
 }
 
-.node-type-primary-info{
+#info-primary,
+#edit-primary-label{
     background-color: darkgreen;
     display: flex;
     align-items: center;
@@ -538,7 +542,8 @@ input[type="radio"]:checked + label {
 
 }
 
-.node-type-secondary-info{
+#info-secondary,
+#edit-secondary-label{
     background-color: rgba(0, 128, 128, 0.932);
     display: flex;
     align-items: center;
@@ -550,7 +555,14 @@ input[type="radio"]:checked + label {
     height: 2em;
     line-height: 1.2;
     color: white;
-
-
-
 }
+
+#edit-primary-label{
+    opacity: 0.6;
+}
+
+#edit-secondary-label{
+    opacity: 0.6;
+}
+
+

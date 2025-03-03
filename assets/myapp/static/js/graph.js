@@ -89,33 +89,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     cy.on('tap', 'node', function(evt) {
         node = evt.target;
-        let nodeData = node.data();
-    
-        document.getElementById("source-title").textContent = nodeData.label || "N/A";
-
-        document.getElementById("source-author").textContent = nodeData.author || "N/A";
-        document.getElementById("source-date-created").textContent = nodeData.date_created || "N/A";
-        document.getElementById("source-date-discovered").textContent = nodeData.date_discovered || "N/A";
-        document.getElementById("source-language").textContent = nodeData.language || "N/A";
-    
-        let linkContainer = document.getElementById("source-link");
-        if (nodeData.url) {
-            linkContainer.innerHTML = `<a href="${nodeData.url}" target="_blank">${nodeData.url}</a>`;
-        } else {
-            linkContainer.textContent = "N/A";
-        }
-    
-        document.getElementById("source-description").textContent = nodeData.description || "N/A";
-    
-        // Call function to update displayed cites
-        setTimeout(() => {
-            updateDisplayedCites();
-        }, 0); // Executes after the event loop updates selection
-    
-        // Show the popup
-        document.getElementById('source-info-popup').checked = true;
+        
+        
+        populateData();
         toggleLabel();
+        document.getElementById('source-info-popup').checked = true;
+        document.getElementById('view-source-info-panel').style.display = 'block';
+    
+        
     });
+    
     
     
 });
