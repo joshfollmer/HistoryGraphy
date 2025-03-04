@@ -26,15 +26,20 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     if(!dateDiscovered){
         dateDiscovered = dateCreated;
     }
-
     
     if(!(citesContainer.style.display = secondaryRadio.checked)){
         selectedCites = [];
     }
+    else{
+        selectedCites = Array.from(selectedCites)
+            .map(nodeId => {
+                const node = nodes.find(n => n.data.id === nodeId);
+                return node ? node.data.label : null;
+            })
+            .filter(title => title !== null); // Remove null values
+    }
+    console.log("Selected cites:", selectedCites);
     
-    
-    
-
     // Create node object
     const newNode = {
         title,
@@ -45,9 +50,8 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         description,
         url,
         language,
-        tags,
         project_id : projectId,
-        selectedCites : Array.from(selectedCites)
+        selected_cites : selectedCites
     };
 
     // Send data to Django server

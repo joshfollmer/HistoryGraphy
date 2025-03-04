@@ -296,7 +296,7 @@ def create_node(request):
         node.url = data.get('url')
         node.language = data.get('language')
         node.contributor = request.user.username
-        cites = data.get('selectedCites', [])
+        cites = data.get('selected_cites', [])
         
         if isinstance(node.title, list):
             print('ERROR: list')
@@ -318,6 +318,8 @@ def create_node(request):
         if existing_node:
             return JsonResponse({'error': 'Node with the same title already exists'}, status=400)
 
+
+        print(f"cites: {cites}")
         # Query to create or update the node
         query = (
             """
@@ -382,3 +384,76 @@ def view_project(request, project_id):
         "project_id": project_id,
         "graphData": graph_data   
     })
+
+
+
+def edit_source(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            node_title = data.get('title')
+            new_author = data.get('author', 'Unknown')
+            new_date_created = data.get('date_created')
+            new_date_discovered = data.get('date_discovered')
+            new_description = data.get('description', '')
+            new_url = data.get('url', '')
+            new_language = data.get('language', 'Unknown')
+            new_contributor = request.user.username
+            new_cites = data.get('cites', [])
+            new_cites_titles = [cite['title'] for cite in new_cites]  # Extract only the titles
+
+
+            print(data)
+            
+            # Convert date strings to datetime objects
+            if new_date_created:
+                new_date_created = datetime.strptime(new_date_created, '%Y-%m-%d').date()
+            if new_date_discovered:
+                new_date_discovered = datetime.strptime(new_date_discovered, '%Y-%m-%d').date()
+
+            if(new_date_discovered < new_date_created):
+                new_date_discovered = new_date_created
+
+            driver = get_neo4j_driver()
+            session = driver.session()
+
+            query = """
+            MATCH (p:Project)-[:CONNECTED_TO]->(n:Source {title: $node_title})
+            SET n.author = $new_author,
+                n.date_created = $new_date_created,
+                n.date_discovered = $new_date_discovered,
+                n.description = $new_description,
+                n.url = $new_url,
+                n.language = $new_language,
+                n.contributor = $new_contributor
+            WITH n
+            OPTIONAL MATCH (n)-[r:CITES]->(cited)
+            DELETE r
+            WITH n
+            UNWIND $new_cites AS citeName
+            MATCH (cited:Source {title: citeName})
+            MERGE (n)-[:CITES]->(cited)
+            RETURN n.title AS node_id
+            """
+
+            params = {
+                'node_title': node_title,
+                'new_author': new_author,
+                'new_date_created': new_date_created,
+                'new_date_discovered': new_date_discovered,
+                'new_description': new_description,
+                'new_url': new_url,
+                'new_language': new_language,
+                'new_contributor': new_contributor,
+                'new_cites': new_cites_titles 
+            }
+
+            session.run(query, params)
+            session.close()
+
+            return JsonResponse({'success': True, 'node_id': node_title})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)

@@ -1,7 +1,7 @@
 
-
+let selectedCites = new Set(); // Store selected nodes
 document.addEventListener("DOMContentLoaded", function () {
-    let selectedCites = new Set(); // Store selected nodes
+    
     const citesDropdown = document.getElementById("cites-dropdown");
     const citesContainer = document.getElementById("cites-container");
     const selectedCitesContainer = document.getElementById("selected-cites");

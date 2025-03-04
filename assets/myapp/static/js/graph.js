@@ -111,9 +111,8 @@ function add_node(data) {
     }
 
     const year = new Date(data.date_discovered).getFullYear();
-    let yPosition = (year - minYear) * scaleFactor;  // Scale based on year difference
+    let yPosition = (year - minYear) * scaleFactor;  
 
-   
     if (!yearPositions[year]) {
         yearPositions[year] = { count: 0 };
     }
@@ -121,13 +120,11 @@ function add_node(data) {
     const xOffset = (Math.random()) * randomXRange + yearPositions[year].count * xSpacing;
     const xPosition = 100 + xOffset;
 
-    
-
-    
     const nodeId = `node-${Date.now()}`;
-    
-   
-    nodes.push({
+
+    // Add new node to Cytoscape directly (instead of pushing to `nodes` array)
+    cy.add({
+        group: "nodes",
         data: {
             id: nodeId,
             label: data.title,
@@ -137,23 +134,72 @@ function add_node(data) {
         position: { x: xPosition, y: yPosition }
     });
 
-    
-
     // Add edges if the node cites other sources
     if (data.selectedCites && data.selectedCites.length > 0) {
         data.selectedCites.forEach(citedId => {
-            // Only add edge if both nodes exist
-            edges.push({
+            cy.add({
+                group: "edges",
                 data: {
                     id: `edge-${nodeId}-${citedId}`,
                     source: nodeId,
                     target: citedId
                 }
             });
-            
         });
     }
 
+    // Lock all nodes to prevent movement
+    cy.nodes().lock();
+}
 
-    init_cy();
+function edit_node(data, nodeId) {
+    let node = cy.getElementById(nodeId);
+    if (!node) {
+        console.error("Node not found:", nodeId);
+        return;
+    }
+
+    // Update node data
+    node.data({
+        label: data.title,
+        date_discovered: data.date_discovered,
+        is_primary: data.is_primary || false
+    });
+
+    // Handle repositioning if year changed
+    const newYear = new Date(data.date_discovered).getFullYear();
+    const oldYear = new Date(node.data("date_discovered")).getFullYear();
+
+    if (newYear !== oldYear) {
+        let yPosition = (newYear - minYear) * scaleFactor;
+
+        if (!yearPositions[newYear]) {
+            yearPositions[newYear] = { count: 0 };
+        }
+
+        const xOffset = (Math.random()) * randomXRange + yearPositions[newYear].count * xSpacing;
+        node.position({ x: 100 + xOffset, y: yPosition });
+
+        yearPositions[newYear].count += 1;
+    }
+
+    // Remove old edges
+    cy.edges().filter(edge => edge.data("source") === nodeId).remove();
+
+    // Add new edges if citations are updated
+    if (data.selectedCites && data.selectedCites.length > 0) {
+        data.selectedCites.forEach(citedId => {
+            cy.add({
+                group: "edges",
+                data: {
+                    id: `edge-${nodeId}-${citedId}`,
+                    source: nodeId,
+                    target: citedId
+                }
+            });
+        });
+    }
+
+    // Ensure all nodes remain locked
+    cy.nodes().lock();
 }

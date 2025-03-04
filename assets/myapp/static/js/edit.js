@@ -63,31 +63,7 @@ window.populateData = function () {
 
 
 
-document.getElementById('save-button').addEventListener('click', function() {
-    // Get the edited values
-    const title = document.getElementById('edit-source-title').value;
-    const author = document.getElementById('edit-source-author').value;
-    const dateCreated = document.getElementById('edit-source-date-created').value;
-    const dateDiscovered = document.getElementById('edit-source-date-discovered').value;
-    const language = document.getElementById('edit-source-language').value;
-    const link = document.getElementById('edit-source-link').value;
-    const description = document.getElementById('edit-source-description').value;
-    const sourceType = document.querySelector('input[name="edit-source-type"]:checked').value;
 
-    // Update the view panel with the edited values
-    document.getElementById('source-title').innerText = title;
-    document.getElementById('source-author').innerText = author;
-    document.getElementById('source-date-created').innerText = dateCreated;
-    document.getElementById('source-date-discovered').innerText = dateDiscovered;
-    document.getElementById('source-language').innerText = language;
-    document.getElementById('source-link').innerText = link;
-    document.getElementById('source-description').innerText = description;
-    document.getElementById('source-type-info').innerText = sourceType.charAt(0).toUpperCase() + sourceType.slice(1);
-
-    // Hide the edit panel and show the view panel
-    document.getElementById('edit-source-info-panel').style.display = 'none';
-    document.getElementById('view-source-info-panel').style.display = 'block';
-});
 
 document.getElementById('cancel-edit-button').addEventListener('click', function() {
     // Hide the edit panel and show the view panel without saving
@@ -133,17 +109,22 @@ document.getElementById('edit-button').addEventListener('click', function() {
     document.getElementById('edit-source-language').value = nodeData.language || "";
     document.getElementById('edit-source-link').value = nodeData.url || "";
     document.getElementById('edit-source-description').value = nodeData.description || "";
-
+    
     // Set the selected radio button for source type
     if (nodeData.is_primary) {
         document.getElementById('edit-primary').checked = true;
         document.getElementById("edit-cites-container").style.display = "none"; // Hide cites for primary
+        document.getElementById('edit-primary-label').classList.add("selected");
+        document.getElementById('edit-secondary-label').classList.remove("selected");
     } else {
         document.getElementById('edit-secondary').checked = true;
         document.getElementById("edit-cites-container").style.display = "flex"; // Show cites for secondary
+        document.getElementById('edit-secondary-label').classList.add("selected");
+        document.getElementById('edit-primary-label').classList.remove("selected");
     }
 
-    
+ 
+
     const citesContainer = document.getElementById("edit-selected-cites");
     citesContainer.innerHTML = ""; // Clear any existing citations
 
@@ -247,28 +228,75 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     });
 
-    // Function to update the displayed citations when a node is loaded
-    function updateCitationsDisplay(node) {
-        selectedCitations = node.data().cites || [];
-        let displayContainer = document.getElementById("info-selected-cites");
-        let editContainer = document.getElementById("edit-selected-cites");
-        
-        displayContainer.innerHTML = "";
-        editContainer.innerHTML = "";
 
-        selectedCitations.forEach(cite => {
-            addCitation(cite.id, cite.title, displayContainer);
-            addCitation(cite.id, cite.title, editContainer);
-        });
-    }
 
     
 
     
-    document.getElementById("save-button").addEventListener("click", function () {
-        let node = cy.getElementById(document.getElementById("edit-source-title").value);
-        node.data().cites = selectedCitations;
+    document.getElementById('save-button').addEventListener('click', async function () {
+        // Collect edited values
+        const editedData = {
+            title: document.getElementById('edit-source-title').value,
+            author: document.getElementById('edit-source-author').value,
+            date_created: document.getElementById('edit-source-date-created').value,
+            date_discovered: document.getElementById('edit-source-date-discovered').value,
+            language: document.getElementById('edit-source-language').value,
+            url: document.getElementById('edit-source-link').value,
+            description: document.getElementById('edit-source-description').value,
+            is_primary: document.getElementById('edit-primary').checked,
+            selectedCites: Array.from(document.getElementById("edit-selected-cites").children).map(cite => cite.textContent.replace("✖", "").trim())
+        };
+    
+        try {
+            // Send edit request to backend
+            const response = await fetch('/edit-source/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(editedData)
+            });
+    
+            if (!response.ok) {
+                throw new Error('Failed to save changes');
+            }
+    
+            // Update Cytoscape node
+            if (node) { // Ensure a node is selected
+                edit_node(editedData, node.id());
+            }
+    
+            // Update the view panel with the new data
+            document.getElementById('source-title').innerText = editedData.title;
+            document.getElementById('source-author').innerText = editedData.author;
+            document.getElementById('source-date-created').innerText = editedData.date_created;
+            document.getElementById('source-date-discovered').innerText = editedData.date_discovered;
+            document.getElementById('source-language').innerText = editedData.language;
+            document.getElementById('source-link').innerHTML = editedData.url ? `<a href="${editedData.url}" target="_blank">${editedData.url}</a>` : "N/A";
+            document.getElementById('source-description').innerText = editedData.description;
+            
+            if (editedData.is_primary) {
+                document.getElementById('info-primary').style.display = 'flex';
+                document.getElementById('info-secondary').style.display = 'none';
+            } else {
+                document.getElementById('info-primary').style.display = 'none';
+                document.getElementById('info-secondary').style.display = 'flex';
+            }
+    
+            // Hide the edit panel and show the view panel
+            document.getElementById('edit-source-info-panel').style.display = 'none';
+            document.getElementById('view-source-info-panel').style.display = 'block';
+    
+            // Close the popup
+            document.getElementById('source-info-popup').checked = false;
+    
+        } catch (error) {
+            console.error("Error saving source:", error);
+            alert("An error occurred while saving the source.");
+        }
     });
+    
+    
 
     // Load sources on page load
     loadAvailableSources();
