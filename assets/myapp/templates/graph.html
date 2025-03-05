@@ -11,6 +11,7 @@
         <label for="popup" class="add-node">New Node</label>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
 <script>
@@ -19,7 +20,9 @@
     const graphData = JSON.parse('{{ graphData|escapejs }}');
     
    
-    const nodes = graphData.nodes;
+    const nodes = graphData.nodes.filter(node => !node.data.isTimelineNode);
+    
+
     const edges = graphData.edges;
 
     
@@ -189,7 +192,7 @@
     <div class="source-info">
         <div class="node-attribute">
             <p><strong>Title:</strong></p>
-            <input type="text" id="edit-source-title">
+            <p id="edit-source-title">N/A</p> 
         </div>
         <div class="node-attribute">
             <p><strong>Source Type:</strong></p>
@@ -238,6 +241,9 @@
         <div class="node-attribute">
             <p><strong>Description:</strong></p>
             <textarea id="edit-source-description"></textarea>
+        </div>
+        <div class = "buttons">
+            <input type="button" class="source-info-delete" id="delete-button" value="Delete">
         </div>
         <div class="buttons">
             <input type="button" class="source-info-save" id="save-button" value="Save">

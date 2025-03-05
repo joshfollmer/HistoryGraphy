@@ -102,7 +102,7 @@ document.getElementById('edit-button').addEventListener('click', function() {
     const nodeData = cy.getElementById(document.getElementById('source-title').innerText).data();
 
     // Populate fields in the edit panel
-    document.getElementById('edit-source-title').value = nodeData.label || "";
+    document.getElementById('edit-source-title').textContent = nodeData.label || "N/A";
     document.getElementById('edit-source-author').value = nodeData.author || "";
     document.getElementById('edit-source-date-created').value = nodeData.date_created || "";
     document.getElementById('edit-source-date-discovered').value = nodeData.date_discovered || "";
@@ -145,15 +145,16 @@ document.getElementById('edit-button').addEventListener('click', function() {
             removeBtn.classList.add("remove-cite");
             removeBtn.addEventListener("click", function () {
                 citeDiv.remove();
-                
-                let node = cy.getElementById(nodeData.id);
-                node.removeEdgeTo(citedNode); 
             });
 
             citeDiv.appendChild(removeBtn);
             citesContainer.appendChild(citeDiv);
         });
     } 
+
+    const dropdown = document.getElementById("edit-cites-dropdown"); // Adjust the ID as per your actual dropdown element
+    populateCitationsDropdown(dropdown, citesContainer);
+    dropdown.style = 'none;'
 
     // Show edit panel
     document.getElementById('view-source-info-panel').style.display = 'none';
@@ -167,15 +168,18 @@ document.addEventListener("DOMContentLoaded", function () {
     let selectedCitations = []; // Stores selected citations for the current node
 
     // Function to fetch and store all source nodes 
-    function loadAvailableSources() {
-        availableSources = cy.nodes().map(node => ({
-            id: node.id(),
-            title: node.data().label 
-        }));
-    }
+    window.loadAvailableSources = function() {
+        availableSources = cy.nodes()
+            .filter(node => !node.data('isTimelineNode'))  // Filter out timeline nodes
+            .map(node => ({
+                id: node.id(),
+                title: node.data().label
+            }));
+    };
+    
 
     // Function to populate dropdown for selecting citations
-    function populateCitationsDropdown(dropdown, selector, selectedContainer) {
+    window.populateCitationsDropdown = function(dropdown, selectedContainer) {
         dropdown.innerHTML = ""; // Clear existing dropdown items
 
         availableSources.forEach(source => {
@@ -223,7 +227,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("edit-cites-selector").addEventListener("click", function () {
         populateCitationsDropdown(
             document.getElementById("edit-cites-dropdown"),
-            this,
             document.getElementById("edit-selected-cites")
         );
     });
@@ -236,16 +239,32 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('save-button').addEventListener('click', async function () {
         // Collect edited values
         const editedData = {
-            title: document.getElementById('edit-source-title').value,
+            title: document.getElementById('edit-source-title').textContent,
             author: document.getElementById('edit-source-author').value,
             date_created: document.getElementById('edit-source-date-created').value,
             date_discovered: document.getElementById('edit-source-date-discovered').value,
             language: document.getElementById('edit-source-language').value,
             url: document.getElementById('edit-source-link').value,
             description: document.getElementById('edit-source-description').value,
-            is_primary: document.getElementById('edit-primary').checked,
-            selectedCites: Array.from(document.getElementById("edit-selected-cites").children).map(cite => cite.textContent.replace("✖", "").trim())
+            is_primary: document.getElementById('edit-primary')?.checked || false,
+            selectedCites: Array.from(document.getElementById("edit-selected-cites")?.children || [])
+                .map(cite => cite.textContent.replace("✖", "").trim())
         };
+
+        
+        
+        // Convert to Date objects before comparison
+        const dateCreated = new Date(editedData.date_created);
+        const dateDiscovered = new Date(editedData.date_discovered);
+        console.log(dateCreated);
+        console.log(dateDiscovered);
+        
+        if (dateDiscovered < dateCreated) {
+            editedData.date_discovered = editedData.date_created;
+        }
+        
+        
+        
     
         try {
             // Send edit request to backend
@@ -289,10 +308,47 @@ document.addEventListener("DOMContentLoaded", function () {
     
             // Close the popup
             document.getElementById('source-info-popup').checked = false;
+            document.getElementById('view-source-info-panel').style = 'none';
+            document.getElementById('edit-source-info-panel').style = 'none';
+
     
         } catch (error) {
             console.error("Error saving source:", error);
             alert("An error occurred while saving the source.");
+        }
+    });
+
+    document.getElementById("delete-button").addEventListener("click", async function() {
+        const sourceTitle = document.getElementById("edit-source-title").textContent;
+    
+        if (!sourceTitle) {
+            alert("No source selected for deletion.");
+            return;
+        }
+    
+        const confirmDelete = confirm(`Are you sure you want to delete "${sourceTitle}"?`);
+        if (!confirmDelete) return;
+        
+
+        try {
+            const response = await fetch('/delete-source/', {
+                method: 'DELETE',  
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: sourceTitle }) 
+            });
+    
+            const data = await response.json();
+    
+            if (data.success) {
+                
+                window.location.reload();  // Refresh the page after deletion
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error deleting source:", error);
         }
     });
     

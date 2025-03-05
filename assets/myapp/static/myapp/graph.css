@@ -361,7 +361,7 @@ button[type="button"] {
 
 .graph {
     width: 100%;
-    height: 80vh; 
+    height: 90vh; 
     border: 1px solid #ccc; /* Optional: Adds a border for visibility */
     background-color: #f9f9f9; /* Optional: Light background for contrast */
 }
@@ -566,3 +566,24 @@ input[type="radio"]:checked + label {
 }
 
 
+#delete-button {
+    background-color: #ff4d4d; /* Red color to indicate danger */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+#delete-button:hover {
+    background-color: #cc0000; /* Darker red for hover effect */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+#delete-button:active {
+    background-color: #a30000; /* Even darker red for click effect */
+    transform: scale(1);
+}

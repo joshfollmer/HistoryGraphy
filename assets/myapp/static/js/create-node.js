@@ -18,7 +18,7 @@ document.getElementById('create-node-form').addEventListener('submit', function(
 
     
     // Validate form
-    if (!title || !dateCreated || !author || !language) {
+    if (!title || !dateCreated) {
         alert('Please fill out all required fields');
         return;
     }
@@ -73,6 +73,9 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         console.log("Response data:", data);
     
         add_node(data);
+        loadAvailableSources();
+        
+
     })
     .catch(error => {
         console.error("Fetch error:", error);

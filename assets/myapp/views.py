@@ -399,12 +399,11 @@ def edit_source(request):
             new_url = data.get('url', '')
             new_language = data.get('language', 'Unknown')
             new_contributor = request.user.username
-            new_cites = data.get('cites', [])
-            new_cites_titles = [cite['title'] for cite in new_cites]  # Extract only the titles
-
-
-            print(data)
+            new_cites = data.get('selectedCites', [])
             
+
+
+                   
             # Convert date strings to datetime objects
             if new_date_created:
                 new_date_created = datetime.strptime(new_date_created, '%Y-%m-%d').date()
@@ -426,6 +425,7 @@ def edit_source(request):
                 n.url = $new_url,
                 n.language = $new_language,
                 n.contributor = $new_contributor
+                
             WITH n
             OPTIONAL MATCH (n)-[r:CITES]->(cited)
             DELETE r
@@ -445,8 +445,9 @@ def edit_source(request):
                 'new_url': new_url,
                 'new_language': new_language,
                 'new_contributor': new_contributor,
-                'new_cites': new_cites_titles 
+                'new_cites': list(new_cites)
             }
+            print("Query Parameters:", params)
 
             session.run(query, params)
             session.close()
@@ -454,6 +455,39 @@ def edit_source(request):
             return JsonResponse({'success': True, 'node_id': node_title})
 
         except Exception as e:
+            import traceback
+            print("Error occurred:", traceback.format_exc())  # Print full error traceback
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+
+def delete_source(request):
+    if request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            source_title = data.get('title')
+
+            if not source_title:
+                return JsonResponse({'error': 'Source title is required'}, status=400)
+
+            driver = get_neo4j_driver()
+            session = driver.session()
+
+            query = """
+            MATCH (s:Source {title: $source_title})
+            DETACH DELETE s
+            """
+
+            session.run(query, {'source_title': source_title})
+            session.close()
+
+            return JsonResponse({'success': True})
+
+        except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
