@@ -332,3 +332,31 @@ function edit_node(data, nodeId) {
 
 
 
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    const timelineCheckbox = document.getElementById("timeline-checkbox");
+
+    timelineCheckbox.addEventListener("change", function () {
+        const showTimeline = this.checked;
+
+        cy.batch(() => {
+            cy.nodes().forEach((node) => {
+                if (node.id().startsWith("node-") && !node.id().startsWith("node-right-")) {
+                    node.style("visibility", showTimeline ? "visible" : "hidden");
+                    
+                }
+            });
+
+            cy.edges().forEach((edge) => {
+                if (edge.source().id().startsWith("node-") || edge.target().id().startsWith("node-")) {
+                    edge.style("visibility", showTimeline ? "visible" : "hidden");
+                }
+            });
+        });
+    });
+});
+
+
+
+
