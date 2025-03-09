@@ -5,8 +5,16 @@ let randomXRange = 500;
 let cy;
 let yearPositions = {};
 let xSpacing = 150;  
-let minYear = Math.min(...nodes.map(node => new Date(node.data.date_discovered).getFullYear()));
+
+
+let earliestYear = Math.min(...nodes.map(node => {
+    let year = new Date(node.data.date_discovered).getFullYear();
+    return node.data.ad_discovered === false ? -year : year; // Convert BC years to negative
+}));
+
+let minYear = earliestYear; // This now correctly handles BC
 let maxYear = Math.max(...nodes.map(node => new Date(node.data.date_discovered).getFullYear()));
+
 
 let node;
 const rng = new Math.seedrandom(projectId); 
@@ -38,6 +46,9 @@ function init_cy() {
                     "text-valign": "center",
                     "text-halign": "center",
                     "font-size": "14px",
+                    "border-width": "2px",  
+                    "border-color": "#000", 
+                    "border-style": "solid"
                 }
             },
             {
@@ -53,13 +64,14 @@ function init_cy() {
                 selector: "node[id^='node-']",  // Selector to target timeline nodes (starting with "node-")
                 style: {
                     "background-color": "#FF6347", // Tomato color for timeline nodes
-                    "width": 40,
-                    "height": 40,
+                    "width": 60,
+                    "height": 60,
                     "label": 'data(label)', 
                     "color": "#fff",
                     "text-valign": "center",
                     "text-halign": "center",
                     "font-size": "14px",
+                    
                 }
             },
             {
@@ -112,36 +124,38 @@ function init_cy() {
     
     // Function to add dummy nodes at every 10 years along the Y-axis
     function addTimelineNodes() {
-        for (let year = minYear; year <= maxYear; year += 10) {
-            let nodeId = `node-${year}`;
-            let yPos = (year - minYear) * scaleFactor; // Space nodes vertically, starting from 50px
-            let rightNodeId = `node-right-${year}`; // ID for the new node on the right side
+        // Round minYear up to the next multiple of 10
+        let startYear = minYear % 10 === 0 ? minYear : Math.ceil(minYear / 10) * 10;
+        startYear -= 10;
     
-            // Create the timeline node
+        for (let year = startYear; year <= maxYear; year += 10) {
+            let displayYear = year < 0 ? `${Math.abs(year)} BC` : `${year} AD`;
+    
+            let nodeId = `node-${year}`;
+            let yPos = (year - minYear) * scaleFactor;
+            let rightNodeId = `node-right-${year}`;
+    
             cy.add({
                 group: 'nodes',
-                data: { id: nodeId, label: year.toString(), isTimelineNode: true },  // Mark it as a timeline node
+                data: { id: nodeId, label: displayYear, isTimelineNode: true },
                 position: { x: -100, y: yPos }
             });
-            
-            // Create the right-side node
+    
             cy.add({
                 group: 'nodes',
-                data: { id: rightNodeId, label: `${year}`, isTimelineNode: true }, // Mark as timeline node
-                position: { x: 1000, y: yPos } // Place it to the right of the timeline node (adjust `x` as needed)
+                data: { id: rightNodeId, label: displayYear, isTimelineNode: true },
+                position: { x: 1000, y: yPos }
             });
     
-            // Create an edge between the timeline node and the right-side node
             cy.add({
                 group: 'edges',
                 data: { source: nodeId, target: rightNodeId }
             });
     
-            // Create an edge to the previous timeline node (if not the first one)
-            if (year > minYear) {
+            if (year > startYear) {
                 let prevYear = year - 10;
                 let prevNodeId = `node-${prevYear}`;
-                
+    
                 cy.add({
                     group: 'edges',
                     data: { source: prevNodeId, target: nodeId }
@@ -149,6 +163,8 @@ function init_cy() {
             }
         }
     }
+    
+    
     
     
     addTimelineNodes();
@@ -160,7 +176,11 @@ function init_cy() {
 document.addEventListener("DOMContentLoaded", function () {
     
     nodes.forEach((node) => {
-        const year = new Date(node.data.date_discovered).getFullYear();
+        let year = new Date(node.data.date_discovered).getFullYear();
+
+        if (node.data.ad_discovered === false) {
+            year = -year; 
+        }
         let yPosition = (year - minYear) * scaleFactor;  // Scale based on year difference
 
         // Handle horizontal spacing
@@ -195,13 +215,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 function add_node(data) {
+    console.log(data);
+
     if (!data || !data.title || !data.date_discovered) {
         console.error("Invalid node data:", data);
         return;
     }
 
+    // Parse date_discovered for positioning
     const year = new Date(data.date_discovered).getFullYear();
-    let yPosition = (year - minYear) * scaleFactor;  
+    let yPosition = (year - minYear) * scaleFactor;
 
     if (!yearPositions[year]) {
         yearPositions[year] = { count: 0 };
@@ -210,16 +233,23 @@ function add_node(data) {
     const xOffset = rng() * randomXRange + yearPositions[year].count * xSpacing;
     const xPosition = 100 + xOffset;
 
-    const nodeId = `node-${Date.now()}`;
+    const nodeId = data.title; // Use title as the ID
 
-    // Add new node to Cytoscape directly (instead of pushing to `nodes` array)
+    // Add new node to Cytoscape with all the properties from `data`
     cy.add({
         group: "nodes",
         data: {
             id: nodeId,
             label: data.title,
-            date_discovered: data.date_discovered,
-            is_primary: data.is_primary || false
+            title: data.title, 
+            author: data.author || "", 
+            date_created: data.date_created , 
+            date_discovered: data.date_discovered, 
+            description: data.description || "", 
+            is_primary: data.is_primary || false, 
+            language: data.language || "", 
+            url: data.url || "", 
+            selectedCites: data.selectedCites || [] 
         },
         position: { x: xPosition, y: yPosition }
     });
@@ -242,6 +272,7 @@ function add_node(data) {
     cy.nodes().lock();
 }
 
+
 function edit_node(data, nodeId) {
     let node = cy.getElementById(nodeId);
     if (!node) {
@@ -249,16 +280,9 @@ function edit_node(data, nodeId) {
         return;
     }
 
-    
+    let previousX = node.position().x;
 
-    // Collect outgoing edges (edges where this node is the source)
-    const outgoingEdges = cy.edges().filter(edge => edge.data("source") === nodeId).map(edge => ({
-        id: edge.id(),
-        source: edge.data("source"),
-        target: edge.data("target")
-    }));
-
-    // Collect incoming edges (edges where this node is the target)
+    // Collect only incoming edges (edges where this node is the target)
     const incomingEdges = cy.edges().filter(edge => edge.data("target") === nodeId).map(edge => ({
         id: edge.id(),
         source: edge.data("source"),
@@ -268,7 +292,7 @@ function edit_node(data, nodeId) {
     // Remove the old node
     node.remove();
 
-    // Calculate new year-based position (yPosition) and xOffset
+    // Calculate new position
     const newYear = new Date(data.date_discovered).getFullYear();
     let yPosition = (newYear - minYear) * scaleFactor;
 
@@ -276,10 +300,10 @@ function edit_node(data, nodeId) {
         yearPositions[newYear] = { count: 0 };
     }
 
-    const xOffset = rng() * randomXRange + yearPositions[newYear].count * xSpacing;
-    
+    let xPosition = previousX || (100 + rng() * randomXRange + (yearPositions[newYear]?.count || 0) * xSpacing);
 
-    // Create a new node with updated data
+
+    // Add new node with updated data
     cy.add({
         group: "nodes",
         data: {
@@ -295,26 +319,14 @@ function edit_node(data, nodeId) {
             selectedCites: data.selectedCites
         },
         position: {
-            x: 100 + xOffset, // Set the new x position
-            y: yPosition      // Set the new y position
+            x: xPosition,
+            y: yPosition
         }
     });
 
     yearPositions[newYear].count += 1;
 
-    // Recreate outgoing edges (edges where this node is the source)
-    outgoingEdges.forEach(edge => {
-        cy.add({
-            group: "edges",
-            data: {
-                id: edge.id,
-                source: edge.source,
-                target: edge.target
-            }
-        });
-    });
-
-    // Recreate incoming edges (edges where this node is the target)
+    // Re-add incoming edges (unchanged)
     incomingEdges.forEach(edge => {
         cy.add({
             group: "edges",
@@ -326,8 +338,25 @@ function edit_node(data, nodeId) {
         });
     });
 
+    // Create outgoing edges from the new data
+    if (data.selectedCites && Array.isArray(data.selectedCites)) {
+        data.selectedCites.forEach(targetId => {
+            cy.add({
+                group: "edges",
+                data: {
+                    id: `edge-${nodeId}-${targetId}`, // Ensure unique ID
+                    source: nodeId,
+                    target: targetId
+                }
+            });
+        });
+    }
+
     // Ensure all nodes remain locked
     cy.nodes().lock();
+
+    // Force layout update to refresh edges
+    cy.layout({ name: "preset" }).run();
 }
 
 

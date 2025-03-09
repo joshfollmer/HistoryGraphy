@@ -34,7 +34,10 @@
             </ul>
         </nav>
     </header>
-
+    <script>
+        // Make Django's user data available in JavaScript
+        const currentUser = "{{ user.username }}";  // Use the username in your JavaScript
+    </script>
 
     <input type="checkbox" id="profile-model" style="display: none;">
     

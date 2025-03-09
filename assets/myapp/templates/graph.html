@@ -83,11 +83,25 @@
             <div class="node-attribute">
                 <p>Date created:</p>
                 <input type="date" id="date-created" name="date_created">
+                <div class="era-toggle">
+                    <input type="radio" id="created-ad" name="date_created_era" value="AD" checked>
+                    <label for="created-ad">AD</label>
+                    <input type="radio" id="created-bc" name="date_created_era" value="BC">
+                    <label for="created-bc">BC</label>
+                </div>
             </div>
+            
             <div class="node-attribute">
                 <p>Date discovered:</p>
                 <input type="date" id="date-discovered" name="date_discovered">
+                <div class="era-toggle">
+                    <input type="radio" id="discovered-ad" name="date_discovered_era" value="AD" checked>
+                    <label for="discovered-ad">AD</label>
+                    <input type="radio" id="discovered-bc" name="date_discovered_era" value="BC">
+                    <label for="discovered-bc">BC</label>
+                </div>
             </div>
+            
             <script>
                 // Get today's date in YYYY-MM-DD format
                 const today = new Date().toISOString().split('T')[0];
@@ -137,8 +151,8 @@
         
         <div class="node-attribute">
             <p><strong>Source Type:</strong></p>
-            <label for="primary" id = "info-primary">Primary</label>
-            <label for="secondary" id = "info-secondary">Secondary</label>
+            <label for="primary" id="info-primary">Primary</label>
+            <label for="secondary" id="info-secondary">Secondary</label>
         </div>
         <div class="node-attribute" id="info-cites-container" style="display: none;">
             <p><strong>Cites:</strong></p>
@@ -162,30 +176,83 @@
             <p id="source-date-discovered">N/A</p> 
         </div>
 
-       
         <div class="node-attribute">
             <p><strong>Language:</strong></p>
             <p id="source-language">N/A</p> 
         </div>
 
-        
         <div class="node-attribute">
             <p><strong>Link:</strong></p>
             <p id="source-link">N/A</p> 
         </div>
 
-        
         <div class="node-attribute">
             <p><strong>Description:</strong></p>
             <p id="source-description">N/A</p> 
         </div>
 
-        
         <div class="buttons">
             <input type="button" class="source-info-edit" id="edit-button" value="Edit">
+            <input type="button" class="source-info-remove" id="remove-button" value="Remove Node" style="display:none;">
         </div>
     </div>
 </div>
+
+<script>
+    
+
+
+    // This function will update the UI based on the current user and the node's contributor
+    function updateNodeButtons(nodeData) {
+        // Check if the current user is the contributor of the node
+        if (nodeData.contributor !== currentUser) {
+            // If the current user is NOT the contributor, show the "Remove Node" button
+            document.getElementById('remove-button').style.display = 'inline-block';
+            document.getElementById('edit-button').style.display = 'none'; // Hide the edit button
+        } else {
+            // If the current user is the contributor, show the "Edit" button
+            document.getElementById('remove-button').style.display = 'none';
+            document.getElementById('edit-button').style.display = 'inline-block'; // Show the edit button
+        }
+    }
+
+    
+    document.getElementById('remove-button').addEventListener('click', function() {
+    const nodeTitle = getCurrentNodeTitle(); 
+     
+
+    fetch('/remove-source-from-project/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: nodeTitle,
+            project_id: projectId
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            
+        } else {
+            alert('Failed to remove node from project');
+        }
+    })
+    .catch(error => {
+        console.error('Error removing node from project:', error);
+    });
+});
+
+
+    // A function to get the current node ID, should be based on your app's logic
+    function getCurrentNodeId() {
+        // Assuming you set this when the node is selected or opened in the info panel
+        return 'exampleNodeId'; // Replace this with actual logic
+    }
+</script>
+
 
 
 
@@ -224,10 +291,22 @@
         <div class="node-attribute">
             <p><strong>Date created:</strong></p>
             <input type="date" id="edit-source-date-created" name="edit-source-date_created">
+            <div class="era-toggle">
+                <input type="radio" id="edit-date_created-ad" name="edit-date_created_era" value="AD" checked>
+                <label for="edit-created-ad">AD</label>
+                <input type="radio" id="edit-date_created-bc" name="edit-date_created_era" value="BC">
+                <label for="edit-created-bc">BC</label>
+            </div>
         </div>
         <div class="node-attribute">
             <p><strong>Date discovered:</strong></p>
             <input type="date" id="edit-source-date-discovered" name="edit-source-date_discovered">
+            <div class="era-toggle">
+                <input type="radio" id="edit-date_discovered-ad" name="edit-date_discovered_era" value="AD" checked>
+                <label for="edit-discovered-ad">AD</label>
+                <input type="radio" id="edit-date_discovered-bc" name="edit-date_discovered_era" value="BC">
+                <label for="edit-discovered-bc">BC</label>
+            </div>
         </div>
         <script>
             

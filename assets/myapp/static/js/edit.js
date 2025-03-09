@@ -16,11 +16,28 @@ window.toggleLabel = function () {
 window.populateData = function () {
     const nodeData = node.data();
 
+    function formatDate(dateString, isAD) {
+        if (!dateString) return "N/A"; // Handle empty dates
+
+        let date = new Date(dateString);
+        let year = date.getFullYear();
+        let month = date.toLocaleString('default', { month: 'long' }); // Full month name
+        let day = date.getDate();
+
+        let formattedYear = isAD ? `${year} AD` : `${Math.abs(year)} BC`; // Convert negative years to BC
+
+        return `${month} ${day}, ${formattedYear}`;
+    }
+
+    // Determine if years are AD or BC
+    let isADCreated = nodeData.ad_created !== false; // Default to AD if missing
+    let isADDiscovered = nodeData.ad_discovered !== false;
+
     // Populate fields in the info panel
     document.getElementById("source-title").textContent = nodeData.label || "N/A";
     document.getElementById("source-author").textContent = nodeData.author || "N/A";
-    document.getElementById("source-date-created").textContent = nodeData.date_created || "N/A";
-    document.getElementById("source-date-discovered").textContent = nodeData.date_discovered || "N/A";
+    document.getElementById("source-date-created").textContent = formatDate(nodeData.date_created, isADCreated);
+    document.getElementById("source-date-discovered").textContent = formatDate(nodeData.date_discovered, isADDiscovered);
     document.getElementById("source-language").textContent = nodeData.language || "N/A";
 
     const linkContainer = document.getElementById("source-link");
@@ -65,6 +82,7 @@ window.populateData = function () {
 
 
 
+
 document.getElementById('cancel-edit-button').addEventListener('click', function() {
     // Hide the edit panel and show the view panel without saving
     document.getElementById('edit-source-info-panel').style.display = 'none';
@@ -100,7 +118,6 @@ document.getElementById("edit-secondary-label").addEventListener("click", functi
 
 document.getElementById('edit-button').addEventListener('click', function() {
     const nodeData = cy.getElementById(document.getElementById('source-title').innerText).data();
-
     // Populate fields in the edit panel
     document.getElementById('edit-source-title').textContent = nodeData.label || "N/A";
     document.getElementById('edit-source-author').value = nodeData.author || "";
@@ -242,7 +259,9 @@ document.addEventListener("DOMContentLoaded", function () {
             title: document.getElementById('edit-source-title').textContent,
             author: document.getElementById('edit-source-author').value,
             date_created: document.getElementById('edit-source-date-created').value,
+            ad_created : document.getElementById("edit-date_created-ad").checked,
             date_discovered: document.getElementById('edit-source-date-discovered').value,
+            ad_discovered : document.getElementById("edit-date_discovered-ad").checked,
             language: document.getElementById('edit-source-language').value,
             url: document.getElementById('edit-source-link').value,
             description: document.getElementById('edit-source-description').value,
@@ -256,8 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Convert to Date objects before comparison
         const dateCreated = new Date(editedData.date_created);
         const dateDiscovered = new Date(editedData.date_discovered);
-        console.log(dateCreated);
-        console.log(dateDiscovered);
+
         
         if (dateDiscovered < dateCreated) {
             editedData.date_discovered = editedData.date_created;
@@ -329,7 +347,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const confirmDelete = confirm(`Are you sure you want to delete "${sourceTitle}"?`);
         if (!confirmDelete) return;
         
-
+        document.getElementById('edit-source-info-panel').style.display = 'none';
+        document.getElementById('view-source-info-panel').style.display = 'none';
         try {
             const response = await fetch('/delete-source/', {
                 method: 'DELETE',  
