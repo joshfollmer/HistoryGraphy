@@ -71,11 +71,16 @@ nav ul {
     padding: 0;
     display: flex; /* Display items in a row */
     gap: 15px; /* Add space between items */
+    align-items: center; /* Vertically center items */
 }
 
 /* Align the Login button to the right */
 nav .right {
     margin-left: auto; /* Push it to the far right */
+}
+
+nav ul li {
+    align-items: center; /* Vertically center items */
 }
 
 /* Navbar links */
@@ -84,7 +89,7 @@ nav ul li a {
     color: white; /* White text for contrast */
     font-size: 24px; /* Font size for readability */
     transition: color 0.3s; /* Smooth color transition for hover effect */
-    line-height: 60px;
+    align-items: center; /* Vertically center items */
 }
 
 nav ul li a:hover {

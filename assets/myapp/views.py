@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import connection 
-from .models import Project, Source
+from .models  import Project
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from neo4j import GraphDatabase
@@ -14,6 +14,7 @@ import os
 import json
 from django.http import JsonResponse
 from datetime import datetime
+from django.utils.html import escape
 
 
 def get_supabase_client() -> Client:
@@ -33,7 +34,7 @@ def get_projects(user_id):
     for project in project_data:
         
         project_instance = Project(
-            id=project[0],  
+            project_id=project[0],  
             name=project[2],  
         )
         projects.append(project_instance)
@@ -45,7 +46,7 @@ def get_project_from_cache(project_id):
     projects = cache.get('global_projects')  
     if projects:
         
-        project = next((p for p in projects if p.id == project_id), None)
+        project = next((p for p in projects if p.project_id == project_id), None)
         return project
     return None  
 
@@ -68,11 +69,14 @@ def create_account_page(request):
     return render(request, 'create-account.html')
 
 
+def sanitize_input(value):
+    return escape(value.strip()) if value else ""
+
 def create_account(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        email = request.POST['email']
+        username = sanitize_input(request.POST.get('username', ''))
+        password = request.POST.get('password', '').strip()  # Don't escape passwords
+        email = sanitize_input(request.POST.get('email', ''))
 
 
         error_message = None  
@@ -102,8 +106,8 @@ def create_account(request):
 def login_user(request):
     if request.method == 'POST':
         # Extract username and password from the POST request
-        username = request.POST['username']
-        password = request.POST['password']
+        username = sanitize_input(request.POST.get('username', ''))
+        password = request.POST.get('password', '').strip()
 
         
         user = authenticate(request, username=username, password=password)
@@ -139,7 +143,7 @@ def get_neo4j_driver():
 def create_project(request):
     if request.method == 'POST':
         new_project = Project(
-           name = request.POST.get('project_name'),
+           name = sanitize_input(request.POST.get('project_name')),
            # You might want to put user.id in here, but since it is a foreign key, django wants to use the whole user object and will automatically
            # set the id.
            owner_id = request.user
@@ -162,7 +166,7 @@ def create_project(request):
             session = driver.session()
 
             query = """
-            CREATE (p:Project {id: $project_id, name: $project_name, owner_id: $owner_id})
+            CREATE (p:Project {project_id: $project_id, name: $project_name, owner_id: $owner_id})
             """
             session.run(query, project_id=project_id, project_name=new_project.name, owner_id=new_project.owner_id.id)
 
@@ -170,191 +174,374 @@ def create_project(request):
 
 
 
-            # Pass the project to the template 
-            return render(request, 'graph.html', {'project': new_project})
+            
+            return redirect(f'/project/{project_id}/')
 
         else:
                 # Handle the case where the insert fails
                 error_message = "Failed to create project."
                 return render(request, 'index.html', {'error_message': error_message})
+        
 
-def view_project(request, project_id):
 
-    project = get_project_from_cache(project_id)
-
-    if not project:
-        # If the project is not found in cache, fetch it from the database again
-        projects = get_projects(request.user.id)
-        project = next((p for p in projects if p.id == project_id), None)
-        if not project:
-            return render(request, "error.html", {"error_message": "Project not found"})
-
-        # After fetching, store it back in the cache
-        cache.set('global_projects', projects, timeout=60*15)
-
+def get_nodes(project_id):
     driver = get_neo4j_driver()
     session = driver.session()
 
-    # Query to get the project node and its neighbors
+    # Query to get the project node, its neighbors, and the relationships (edges)
     query = """
-    MATCH (p:Project {id: $project_id})-[:CONNECTED_TO]-(neighbor)
-    OPTIONAL MATCH (neighbor)-[r:CONNECTED_TO]-(other_neighbor)
-    WHERE other_neighbor IN [(p)-[:CONNECTED_TO]-(n) | n]  // Keep only edges between project neighbors
-    RETURN p, neighbor, r, other_neighbor
+    MATCH (p:Project {project_id: $project_id})-[:CONNECTED_TO]->(neighbor)
+    OPTIONAL MATCH (neighbor)-[r:CITES]->(cited_neighbor)
+    RETURN p, neighbor, cited_neighbor, type(r) AS relationship_type
     """
-    result = session.run(query, project_id=project_id)
 
+
+
+    result = session.run(query, project_id=project_id)
     
-    
-    # Loop through the retrieved nodes (the neighbors of the project node) and get every unique node and connection 
-    nodes = []  
+    added_nodes = set()
+    nodes = []
     edges = []
 
-    # Ensure result has records before looping
-    if result.peek() is not None:
-        seen_nodes = set()
-        seen_edges = set()
+    # Process each record from the query result
+    for record in result:
+        
+        neighbor_node = record["neighbor"]
+        cited = record["cited_neighbor"]
 
-        for record in result:
-            project_node = record["p"]
-            neighbor_node = record["neighbor"]
-            relationship = record["r"]
-            other_neighbor = record["other_neighbor"]
+        if neighbor_node:  # Ensure there is a neighbor node
+            node_title = neighbor_node.get("title", "Untitled")  # Default to "Untitled" if no title exists
+            
+            # Because of how the query gets returned, if we don't do this check it will process each edge as a new node
+            if node_title not in added_nodes:
+                date_created = neighbor_node.get("date_created", None)
+                date_discovered = neighbor_node.get("date_discovered", None)
 
+                # If the date fields exist, convert them to string (ISO format)
+                if date_created:
+                    date_created = date_created.isoformat()
+                if date_discovered:
+                    date_discovered = date_discovered.isoformat()
 
+                # Collect node data for the neighbor
+                nodes.append({
+                    "data": {
+                        "id": node_title,  # Use title as the ID
+                        "label": node_title,  # Use title as the label
+                        "author": neighbor_node.get("author", "Unknown"),
+                        "date_created": date_created,
+                        "ad_created" : neighbor_node.get("ad_created"),
+                        "date_discovered": date_discovered,
+                        "ad_discovered" : neighbor_node.get("ad_discovered"),
+                        "is_primary": neighbor_node.get("is_primary", False),
+                        "description": neighbor_node.get("description", ""),
+                        "url": neighbor_node.get("url", ""),
+                        "contributor": neighbor_node.get("contributor", ""),
+                        "language": neighbor_node.get("language", ""),
+                    }
+                })
 
-            # Add neighbor nodes (if they exist)
-            if neighbor_node and neighbor_node["id"] not in seen_nodes:
-                nodes.append({"id": neighbor_node["id"], "label": neighbor_node["name"]})
-                seen_nodes.add(neighbor_node["id"])
+                added_nodes.add(node_title)
 
-            if other_neighbor and other_neighbor["id"] not in seen_nodes:
-                nodes.append({"id": other_neighbor["id"], "label": other_neighbor["name"]})
-                seen_nodes.add(other_neighbor["id"])
-
-            # Add edges: between project -> neighbor and neighbor -> neighbor
-            if neighbor_node and (project_node["id"], neighbor_node["id"]) not in seen_edges:
-                edges.append({"source": project_node["id"], "target": neighbor_node["id"]})
-                seen_edges.add((project_node["id"], neighbor_node["id"]))
-
-            if relationship and other_neighbor:
-                if (neighbor_node["id"], other_neighbor["id"]) not in seen_edges:
-                    edges.append({"source": neighbor_node["id"], "target": other_neighbor["id"]})
-                    seen_edges.add((neighbor_node["id"], other_neighbor["id"]))
-
-
+            if(cited):
+                edges.append({
+                    "data": {
+                        "source": node_title,  
+                        "target": cited["title"]  
+                    }
+                })
 
     session.close()
 
+
+
     
-    return render(request, "graph.html", {
-        "project": project,
+    result_json = json.dumps({
         "nodes": nodes,
         "edges": edges
     })
 
+    return result_json
 
-@csrf_exempt
-def save_nodes(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        nodes_data = data.get('nodes', [])
 
-        for node_data in nodes_data:
-            # Save each node to the database (you might need to adjust this according to your model)
-            Source.objects.create(
-                name=node_data.get('name'),
-                source_type=node_data.get('sourceType'),
-                date_created=node_data.get('dateCreated'),
-                date_discovered=node_data.get('dateDiscovered'),
-                discovered_after_created=node_data.get('discoveredAfterCreated'),
-                tags=node_data.get('tags')  # Assuming your model can handle tags
-            )
 
-        return JsonResponse({'success': True, 'message': 'Nodes saved successfully'})
+#CODE TO DELETE A NODE:
+# MATCH (n:Source {title: })
+# DETACH DELETE n;
 
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
 
 
 
 def create_node(request):
     if request.method == 'POST':
-        print("creating node")
         data = json.loads(request.body)
-        
-        title = data.get('title')
-        if not title:
-            return JsonResponse({'error': 'Title is required'}, status=400)
-        
+
+        # Date handling
         date_created_str = data.get('date_created')
         date_discovered_str = data.get('date_discovered', date_created_str)
 
         date_created_datetime = datetime.strptime(date_created_str, '%Y-%m-%d').date()
         date_discovered_datetime = datetime.strptime(date_discovered_str, '%Y-%m-%d').date()
 
+        project_id = int(data.get('project_id'))  # Project ID
 
-        node = Source(
-            title=title,
-            author=data.get('author', 'Unknown'),
-            date_created=date_created_datetime,
-            date_discovered=date_discovered_datetime,
-            is_primary=data.get('is_primary', False),
-            description=data.get('description'),
-            url=data.get('url'),
-            language=data.get('language'),
-            tags=data.get('tags', []),
-            contributor= request.user.username
-        )
+        # Setting the node properties
+        title = sanitize_input(data.get('title', 'Untitled'))
+        author = sanitize_input(data.get('author', 'Unknown'))
+        date_created = date_created_datetime
+        ad_created = data.get("ad_created", True)
+        date_discovered = date_discovered_datetime
+        ad_discovered = data.get("ad_discovered", True)
+        is_primary = data.get('is_primary', False)
+        description = sanitize_input(data.get('description'))
+        url = sanitize_input(data.get('url'))
+        language = sanitize_input(data.get('language'))
+        contributor = request.user.username
+        cites = data.get('selected_cites', [])
 
-        # node.save()
-
+        # Neo4j connection setup
         driver = get_neo4j_driver()
         session = driver.session()
 
+        # Check if the node with the same title exists
+        query_check = """
+        MATCH (n:Source {title: $title})
+        RETURN n
+        LIMIT 1
+        """
+        result = session.run(query_check, {'title': title})
+        existing_node = result.single()
+
+        if existing_node:
+            node_data = existing_node['n']
+            return JsonResponse({
+                'title': node_data['title'],
+                'author': node_data.get('author', 'Unknown'),
+                'date_created': node_data.get('date_created'),
+                'date_discovered': node_data.get('date_discovered'),
+                'is_primary': node_data.get('is_primary', False),
+                'description': node_data.get('description', ''),
+                'url': node_data.get('url', ''),
+                'language': node_data.get('language', ''),
+                'contributor': node_data.get('contributor', ''),
+                'selectedCites': list(cites)
+            })
+
+        # Query to create a new node
         query = """
+        MATCH (p:Project) WHERE p.project_id = $projectId 
         CREATE (n:Source {
-            title: $title, 
-            author: $author, 
-            date_created: $date_created, 
-            date_discovered: $date_discovered, 
-            is_primary: $is_primary, 
-            description: $description, 
-            url: $url, 
-            language: $language, 
-            tags: $tags, 
+            title: $title,
+            author: $author,
+            date_created: $date_created,
+            ad_created: $ad_created,
+            date_discovered: $date_discovered,
+            ad_discovered: $ad_discovered,
+            is_primary: $is_primary,
+            description: $description,
+            url: $url,
+            language: $language,
             contributor: $contributor
         })
+        MERGE (p)-[:CONNECTED_TO]->(n) 
+        WITH n 
+        UNWIND $selectedCites AS citeName 
+        MATCH (cited:Source {title: citeName}) 
+        MERGE (n)-[:CITES]->(cited) 
+        RETURN n.title AS node_id
         """
-        
+
         params = {
-            'title': node.title,
-            'author': node.author,
-            'date_created': node.date_created,
-            'date_discovered': node.date_discovered,
-            'is_primary': node.is_primary,
-            'description': node.description,
-            'url': node.url,
-            'language': node.language,
-            'tags': node.tags,
-            'contributor': node.contributor
+            'title': title,
+            'author': author,
+            'date_created': date_created,
+            'ad_created': ad_created,
+            'date_discovered': date_discovered,
+            'ad_discovered': ad_discovered,
+            'is_primary': is_primary,
+            'description': description,
+            'url': url,
+            'language': language,
+            'contributor': contributor,
+            'projectId': project_id,
+            'selectedCites': list(cites)
         }
 
+        # Run the query to create the new Source node
         session.run(query, params)
-         # Confirm that the node was saved
-        print(f"Node saved: ID={node.id}, Title={node.title}, Contributor={node.contributor}")
 
-        # Return all the fields in the response
+        # Return the newly created node data
         return JsonResponse({
-            'title': node.title,
-            'author': node.author,
-            'date_created': node.date_created,
-            'date_discovered': node.date_discovered,
-            'is_primary': node.is_primary,
-            'description': node.description,
-            'url': node.url,
-            'language': node.language,
-            'tags': node.tags,
-            'contributor' : node.contributor
+            'title': title,
+            'author': author,
+            'date_created': date_created,
+            'date_discovered': date_discovered,
+            'is_primary': is_primary,
+            'description': description,
+            'url': url,
+            'language': language,
+            'contributor': contributor,
+            'selectedCites': list(cites)
         })
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def view_project(request, project_id):
+    graph_data = get_nodes(project_id)
+    return render(request, "graph.html", {
+        "project_id": project_id,
+        "graphData": graph_data   
+    })
+
+
+
+def edit_source(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            node_title = data.get('title')
+            new_author = sanitize_input(data.get('author', 'Unknown'))
+            new_date_created = data.get('date_created')
+            new_ad_created = data.get('ad_created')
+            new_date_discovered = data.get('date_discovered')
+            new_ad_discovered = data.get('ad_discovered')
+            new_description = sanitize_input(data.get('description', ''))
+            new_url = sanitize_input(data.get('url', ''))
+            new_language = sanitize_input(data.get('language', 'Unknown'))
+            new_contributor = request.user.username
+            new_cites = data.get('selectedCites', [])
+            
+
+
+                   
+            # Convert date strings to datetime objects
+            if new_date_created:
+                new_date_created = datetime.strptime(new_date_created, '%Y-%m-%d').date()
+            if new_date_discovered:
+                new_date_discovered = datetime.strptime(new_date_discovered, '%Y-%m-%d').date()
+
+            if(new_date_discovered < new_date_created):
+                new_date_discovered = new_date_created
+
+            driver = get_neo4j_driver()
+            session = driver.session()
+
+            query = """
+            MATCH (p:Project)-[:CONNECTED_TO]->(n:Source {title: $node_title})
+            SET n.author = $new_author,
+                n.date_created = $new_date_created,
+                n.ad_created = $new_ad_created,
+                n.date_discovered = $new_date_discovered,
+                n.ad_discovered = $new_ad_discovered,
+                n.description = $new_description,
+                n.url = $new_url,
+                n.language = $new_language,
+                n.contributor = $new_contributor
+                
+            WITH n
+            OPTIONAL MATCH (n)-[r:CITES]->(cited)
+            DELETE r
+            WITH n
+            UNWIND $new_cites AS citeName
+            MATCH (cited:Source {title: citeName})
+            MERGE (n)-[:CITES]->(cited)
+            RETURN n.title AS node_id
+            """
+
+            params = {
+                'node_title': node_title,
+                'new_author': new_author,
+                'new_date_created': new_date_created,
+                'new_ad_created' : new_ad_created,
+                'new_date_discovered': new_date_discovered,
+                'new_ad_discovered' : new_ad_discovered,
+                'new_description': new_description,
+                'new_url': new_url,
+                'new_language': new_language,
+                'new_contributor': new_contributor,
+                'new_cites': list(new_cites)
+            }
+            print("Query Parameters:", params)
+
+            session.run(query, params)
+            session.close()
+
+            return JsonResponse({'success': True, 'node_id': node_title})
+
+        except Exception as e:
+            import traceback
+            print("Error occurred:", traceback.format_exc())  # Print full error traceback
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+
+def delete_source(request):
+    if request.method == 'DELETE':
+        try:
+            data = json.loads(request.body)
+            source_title = data.get('title')
+
+            if not source_title:
+                return JsonResponse({'error': 'Source title is required'}, status=400)
+
+            driver = get_neo4j_driver()
+            session = driver.session()
+
+            query = """
+            MATCH (s:Source {title: $source_title})
+            DETACH DELETE s
+            """
+
+            session.run(query, {'source_title': source_title})
+            session.close()
+
+            return JsonResponse({'success': True})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+def remove_source_from_project(request):
+    if request.method == 'POST':
+        try:
+            # Extract the required data from the request
+            data = json.loads(request.body)
+            node_title = data.get('title')  
+            project_id = int(data.get('project_id'))  
+
+            driver = get_neo4j_driver()
+            session = driver.session()
+
+            # Cypher query to sever the connection between the node and the project
+            query = """
+            MATCH (p:Project)-[r:CONNECTED_TO]->(n:Source {title: $node_title})
+            WHERE p.project_id = $project_id
+            DELETE r
+            RETURN p.project_id AS project_id, n.title AS node_title
+            """
+
+            params = {
+                'node_title': node_title,
+                'project_id': project_id
+            }
+
+            # Run the query
+            result = session.run(query, params)
+            session.close()
+
+            # If the result is not empty, the connection was removed successfully
+            if result.peek():
+                return JsonResponse({'success': True, 'message': f'Node "{node_title}" removed from project {project_id}.'})
+
+            return JsonResponse({'error': 'Node or Project not found'}, status=404)
+
+        except Exception as e:
+            import traceback
+            print("Error occurred:", traceback.format_exc())  # Print full error traceback
+            return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)

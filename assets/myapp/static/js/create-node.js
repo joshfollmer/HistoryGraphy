@@ -10,72 +10,73 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     const url = document.getElementById('link').value;
     const description = document.getElementById('description').value;
 
+    const citesContainer = document.getElementById("cites-container");
+    const secondaryRadio = document.getElementById("secondary");
+
+    // Capture AD/BC selection
+    const adCreated = document.getElementById('created-ad').checked; // true if AD, false if BC
+    const adDiscovered = document.getElementById('discovered-ad').checked; // true if AD, false if BC
+
     // Validate form
-    if (!title || !dateCreated || !author || !language) {
+    if (!title || !dateCreated) {
         alert('Please fill out all required fields');
         return;
     }
 
-    if(!dateDiscovered){
+    if (!dateDiscovered) {
         dateDiscovered = dateCreated;
     }
 
-    // Create node object
+    let selectedCites = [];
+    if (!(citesContainer.style.display = secondaryRadio.checked)) {
+        selectedCites = [];
+    } else {
+        selectedCites = Array.from(selectedCites)
+            .map(nodeId => {
+                const node = nodes.find(n => n.data.id === nodeId);
+                return node ? node.data.label : null;
+            })
+            .filter(title => title !== null); // Remove null values
+    }
+    console.log("Selected cites:", selectedCites);
+
+    // Create node object with new attributes
     const newNode = {
         title,
         author,
         is_primary: sourceType === 'primary',
         date_created: dateCreated,
+        ad_created: adCreated, // true if AD, false if BC
         date_discovered: dateDiscovered,
+        ad_discovered: adDiscovered, // true if AD, false if BC
         description,
         url,
         language,
-        tags,
+        project_id: projectId,
+        selected_cites: selectedCites
     };
 
     // Send data to Django server
     fetch('/create-node/', {
-method: 'POST',
-headers: {
-    'Content-Type': 'application/json',
-    'X-CSRFToken': '{{ csrf_token }}'
-},
-body: JSON.stringify(newNode)
-})
-.then(response => {
-    console.log("Response status:", response.status);
-    return response.json();
-})
-.then(data => {
-    console.log("Response data:", data);
-})
-.catch(error => {
-    console.error("Fetch error:", error);
-})
-
-    .then(response => response.json())
-    .then(data => {
-        // Render the node on the graph
-        const cy = cytoscape({
-            container: document.getElementById('cy'),
-            elements: [
-                {
-                    data: {  label: data.title }
-                }
-            ],
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        'background-color': '#007bff',
-                        'label': 'data(label)',
-                        'width': '30px',
-                        'height': '30px'
-                    }
-                }
-            ],
-            layout: { name: 'grid', rows: 2 }
-        });
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(newNode)
     })
-    .catch(error => console.error('Error:', error));
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();  
+    })
+    .then(data => {
+        console.log("Response data:", data);
+        add_node(data);
+        loadAvailableSources();
+    })
+    .catch(error => {
+        console.error("Fetch error:", error);
+    });
 });

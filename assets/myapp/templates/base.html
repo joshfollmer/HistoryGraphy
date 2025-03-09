@@ -7,14 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}HistoryGraphy{% endblock %}</title>
     <link rel="stylesheet" type="text/css" href="{% static 'myapp/styles.css' %}">
+    <link rel="icon" type="image/png" href="{% static 'myapp/hg_icon.png' %}">
     {% block extra_css %}
     {% endblock %}
 </head>
 <body>
     <header>
         <nav>
-            <ul>
-                <li><a href="/">HistoryGraphy</a></li>
+            <ul class="left">
+                <li>
+                    <a href="/">
+                        <img src="{% static 'myapp/hg_logo.png' %}" alt="HistoryGraphy Logo" style="height: 50px;">
+                    </a>
+                </li>
             </ul>
             <ul class="right">
                 {% if user.is_authenticated %}
@@ -29,7 +34,10 @@
             </ul>
         </nav>
     </header>
-
+    <script>
+        // Make Django's user data available in JavaScript
+        const currentUser = "{{ user.username }}";  // Use the username in your JavaScript
+    </script>
 
     <input type="checkbox" id="profile-model" style="display: none;">
     

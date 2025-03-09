@@ -11,6 +11,37 @@
         <label for="popup" class="add-node">New Node</label>
     </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.24.0/cytoscape.min.js"></script>
+<script>
+    var projectId = "{{ project_id }}";  
+    
+    const graphData = JSON.parse('{{ graphData|escapejs }}');
+    
+   
+    const nodes = graphData.nodes.filter(node => !node.data.isTimelineNode);
+    
+
+    const edges = graphData.edges;
+
+    
+
+    
+</script>
+
+
+
+
+
+<div id="cy" class="graph"></div> 
+
+<script src="{% static 'js/graph.js' %}"></script>
+
+<div class="checkbox-container">
+    <input type="checkbox" id="timeline-checkbox" checked>
+    <label for="timeline-checkbox">Show Timeline</label>
+</div>
 
 <input type="checkbox" id="popup" style="display: none;">
 <div class="node-overlay"></div>
@@ -25,39 +56,26 @@
                 <p id="node-name-error" style="color: red; display: none;">Title is required</p>
             </div>
             <div class="node-attribute">
-                <p>Source type:</p>
+                <p>Source Type:</p>
                 <input type="radio" id="primary" name="source_type" value="primary" style="display:none;">
                 <label for="primary" class="node-type-primary">Primary</label>
                 <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
                 <label for="secondary" class="node-type-secondary">Secondary</label>
-                <script>
-                    document.addEventListener("DOMContentLoaded", function () {
-                    const labels = document.querySelectorAll(".node-attribute label");
-                    const radios = document.querySelectorAll("input[name='source_type']");
-
-                    labels.forEach(label => {
-                        label.addEventListener("click", function () {
-                            // Remove 'selected' class from all labels
-                            labels.forEach(l => l.classList.remove("selected"));
-
-                            // Add 'selected' class to clicked label
-                            this.classList.add("selected");
-
-                            // Set the associated radio button as checked
-                            document.getElementById(this.getAttribute("for")).checked = true;
-                        });
-                    });
-
-                    // Ensure correct label is marked as selected on page load
-                    radios.forEach(radio => {
-                        if (radio.checked) {
-                            document.querySelector(`label[for="${radio.id}"]`).classList.add("selected");
-                        }
-                    });
-                });
-
-                </script>
+                
             </div>
+            <div class="node-attribute" id="cites-container" style="display: none;">
+                
+                <div id="cites-setup" class = "cites-setup">
+                    <p>Cites:</p>
+                    <div id="cites-selector" class="cites-selector">Select a Source</div>
+                    <div id="cites-dropdown" class="cites-dropdown" style="display: none;"></div>
+                </div>
+                <div id="selected-cites" class="selected-cites"></div>
+            </div>
+            
+            <script src="{% static 'js/citations.js' %}">
+                
+            </script>
             <div class="node-attribute">
                 <p>Author/creator:</p>
                 <input type="text" id="author" name="author">
@@ -65,11 +83,32 @@
             <div class="node-attribute">
                 <p>Date created:</p>
                 <input type="date" id="date-created" name="date_created">
+                <div class="era-toggle">
+                    <input type="radio" id="created-ad" name="date_created_era" value="AD" checked>
+                    <label for="created-ad">AD</label>
+                    <input type="radio" id="created-bc" name="date_created_era" value="BC">
+                    <label for="created-bc">BC</label>
+                </div>
             </div>
+            
             <div class="node-attribute">
                 <p>Date discovered:</p>
                 <input type="date" id="date-discovered" name="date_discovered">
+                <div class="era-toggle">
+                    <input type="radio" id="discovered-ad" name="date_discovered_era" value="AD" checked>
+                    <label for="discovered-ad">AD</label>
+                    <input type="radio" id="discovered-bc" name="date_discovered_era" value="BC">
+                    <label for="discovered-bc">BC</label>
+                </div>
             </div>
+            
+            <script>
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date().toISOString().split('T')[0];
+                // Set max attribute for both date inputs
+                document.getElementById("date-created").max = today;
+                document.getElementById("date-discovered").max = today;
+            </script>
             <div class="node-attribute">
                 <p>Language of source:</p>
                 <input type="text" id="language" name="language">
@@ -82,63 +121,236 @@
                 <p>Description:</p>
                 <input type="text" id="description" name="description">
             </div>
-            <div class="node-attribute">
-                <p>Tags:</p>
-                <input type="text" id="tag-input" placeholder="Enter a tag" onkeydown="checkEnter(event)">
-                <button type="button" onclick="addTag()">+</button>
+           
+            <div class="buttons">
+                <input type="submit" class="node-model-close" id="create-button" value="Create">
+                <input type="button" class="node-model-close" id="cancel-button" value="Cancel">
                 
             </div>
-            <ul id="tags-list"></ul>
-            <div class="buttons">
-                <input type="submit" class="node-model-close" value="Create">
-                <input type="button" class="node-model-close" id="cancel-button" value="Cancel">
-                <script src="{% static 'js/popup_close.js' %}"></script>
-            </div>
+            <script src="{% static 'js/popup_close.js' %}"></script>
         </form>
     </div>
 </div>
-{% endblock %}
 
-<div id="cy"></div> <!-- Cytoscape container -->
 
-{% block extra_js %}
+<input type="checkbox" id="source-info-popup" style="display:none">
+<div class="source-info-overlay"></div>
+
+<!-- Info Panel (View Mode) -->
+<div class="source-info-panel" id="view-source-info-panel">
+    <div class="source-info-header">
+        <h1>Source</h1>
+        <button class="close-button" id="close-button">&times;</button>
+    </div>
+    <div class="source-info">
+        <!-- Title Section -->
+        <div class="node-attribute">
+            <p><strong>Title:</strong></p>
+            <p id="source-title">N/A</p> 
+        </div>
+        
+        <div class="node-attribute">
+            <p><strong>Source Type:</strong></p>
+            <label for="primary" id="info-primary">Primary</label>
+            <label for="secondary" id="info-secondary">Secondary</label>
+        </div>
+        <div class="node-attribute" id="info-cites-container" style="display: none;">
+            <p><strong>Cites:</strong></p>
+            <div id="info-selected-cites" class="info-selected-cites"></div>
+        </div>
+
+        <div class="node-attribute">
+            <p><strong>Author/Creator:</strong></p>
+            <p id="source-author">N/A</p>
+        </div>
+
+        <!-- Date Created Section -->
+        <div class="node-attribute">
+            <p><strong>Date Created:</strong></p>
+            <p id="source-date-created">N/A</p> 
+        </div>
+
+        <!-- Date Discovered Section -->
+        <div class="node-attribute">
+            <p><strong>Date Discovered:</strong></p>
+            <p id="source-date-discovered">N/A</p> 
+        </div>
+
+        <div class="node-attribute">
+            <p><strong>Language:</strong></p>
+            <p id="source-language">N/A</p> 
+        </div>
+
+        <div class="node-attribute">
+            <p><strong>Link:</strong></p>
+            <p id="source-link">N/A</p> 
+        </div>
+
+        <div class="node-attribute">
+            <p><strong>Description:</strong></p>
+            <p id="source-description">N/A</p> 
+        </div>
+
+        <div class="buttons">
+            <input type="button" class="source-info-edit" id="edit-button" value="Edit">
+            <input type="button" class="source-info-remove" id="remove-button" value="Remove Node" style="display:none;">
+        </div>
+    </div>
+</div>
+
 <script>
-    let tags = [];
     
-    function addTag() {
-        const tagInput = document.getElementById('tag-input');
-        const tagValue = tagInput.value.trim();
-        if (tagValue && !tags.includes(tagValue)) {
-            tags.push(tagValue);
-            updateTagsList();
-            tagInput.value = '';
+
+
+    // This function will update the UI based on the current user and the node's contributor
+    function updateNodeButtons(nodeData) {
+        // Check if the current user is the contributor of the node
+        if (nodeData.contributor !== currentUser) {
+            // If the current user is NOT the contributor, show the "Remove Node" button
+            document.getElementById('remove-button').style.display = 'inline-block';
+            document.getElementById('edit-button').style.display = 'none'; // Hide the edit button
+        } else {
+            // If the current user is the contributor, show the "Edit" button
+            document.getElementById('remove-button').style.display = 'none';
+            document.getElementById('edit-button').style.display = 'inline-block'; // Show the edit button
         }
     }
 
-    function updateTagsList() {
-        const tagsList = document.getElementById('tags-list');
-        tagsList.innerHTML = '';
-        tags.forEach(tag => {
-            const li = document.createElement('li');
-            li.textContent = tag;
-            const removeBtn = document.createElement('button');
-            removeBtn.textContent = 'x';
-            removeBtn.onclick = () => removeTag(tag);
-            li.appendChild(removeBtn);
-            tagsList.appendChild(li);
-        });
-    }
+    
+    document.getElementById('remove-button').addEventListener('click', function() {
+    const nodeTitle = getCurrentNodeTitle(); 
+     
 
-    function removeTag(tag) {
-    const index = tags.indexOf(tag);
-    if (index > -1) {
-        tags.splice(index, 1);  // Modify array instead of reassigning
+    fetch('/remove-source-from-project/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: nodeTitle,
+            project_id: projectId
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            
+        } else {
+            alert('Failed to remove node from project');
+        }
+    })
+    .catch(error => {
+        console.error('Error removing node from project:', error);
+    });
+});
+
+
+    // A function to get the current node ID, should be based on your app's logic
+    function getCurrentNodeId() {
+        // Assuming you set this when the node is selected or opened in the info panel
+        return 'exampleNodeId'; // Replace this with actual logic
     }
-    updateTagsList();
-}
+</script>
+
+
+
+
+<div class="source-info-panel" id="edit-source-info-panel" style="display:none;">
+    <div class="source-info-header">
+        <h1>Edit Source</h1>
+        <button class="close-button" id="close-edit-button">&times;</button>
+    </div>
+    <div class="source-info">
+        <div class="node-attribute">
+            <p><strong>Title:</strong></p>
+            <p id="edit-source-title">N/A</p> 
+        </div>
+        <div class="node-attribute">
+            <p><strong>Source Type:</strong></p>
+            <input type="radio" id="edit-primary" name="edit-source-type" value="primary">
+            <label for="edit-primary" id="edit-primary-label">Primary</label>
+            <input type="radio" id="edit-secondary" name="edit-source-type" value="secondary">
+            <label for="edit-secondary" id ="edit-secondary-label">Secondary</label>
+        </div>
+        <div class="node-attribute" id="edit-cites-container" style="display: none;">
+                
+            <div id="edit-cites-setup" class = "edit-cites-setup">
+                <p><strong>Cites:</strong></p>
+                <div id="edit-cites-selector" class="edit-cites-selector">Select a Source</div>
+                <div id="edit-cites-dropdown" class="edit-cites-dropdown" style="display: none;"></div>
+            </div>
+            <div id="edit-selected-cites" class="edit-selected-cites"></div>
+        </div>
+        
+        
+        <div class="node-attribute">
+            <p><strong>Author/creator:</strong></p>
+            <input type="text" id="edit-source-author">
+        </div>
+        <div class="node-attribute">
+            <p><strong>Date created:</strong></p>
+            <input type="date" id="edit-source-date-created" name="edit-source-date_created">
+            <div class="era-toggle">
+                <input type="radio" id="edit-date_created-ad" name="edit-date_created_era" value="AD" checked>
+                <label for="edit-created-ad">AD</label>
+                <input type="radio" id="edit-date_created-bc" name="edit-date_created_era" value="BC">
+                <label for="edit-created-bc">BC</label>
+            </div>
+        </div>
+        <div class="node-attribute">
+            <p><strong>Date discovered:</strong></p>
+            <input type="date" id="edit-source-date-discovered" name="edit-source-date_discovered">
+            <div class="era-toggle">
+                <input type="radio" id="edit-date_discovered-ad" name="edit-date_discovered_era" value="AD" checked>
+                <label for="edit-discovered-ad">AD</label>
+                <input type="radio" id="edit-date_discovered-bc" name="edit-date_discovered_era" value="BC">
+                <label for="edit-discovered-bc">BC</label>
+            </div>
+        </div>
+        <script>
+            
+            // Set max attribute for both date inputs
+            document.getElementById("edit-source-date-created").max = today;
+            document.getElementById("edit-source-date-discovered").max = today;
+        </script>
+        <div class="node-attribute">
+            <p><strong>Language:</strong></p>
+            <input type="text" id="edit-source-language">
+        </div>
+        <div class="node-attribute">
+            <p><strong>Link:</strong></p>
+            <input type="url" id="edit-source-link">
+        </div>
+        <div class="node-attribute">
+            <p><strong>Description:</strong></p>
+            <textarea id="edit-source-description"></textarea>
+        </div>
+        <div class = "buttons">
+            <input type="button" class="source-info-delete" id="delete-button" value="Delete">
+        </div>
+        <div class="buttons">
+            <input type="button" class="source-info-save" id="save-button" value="Save">
+            <input type="button" class="source-info-cancel" id="cancel-edit-button" value="Cancel">
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/popup_close.js' %}"></script>
+
+<script src="{% static 'js/edit.js' %}"></script>
+
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+   
 
     function checkEnter(event) {
         if (event.key === 'Enter') {
+            event.preventDefault();
             addTag();
         }
     }
