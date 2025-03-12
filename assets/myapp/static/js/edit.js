@@ -30,7 +30,7 @@ window.populateData = function () {
     }
 
     // Determine if years are AD or BC
-    let isADCreated = nodeData.ad_created !== false; // Default to AD if missing
+    let isADCreated = nodeData.ad_created !== false; 
     let isADDiscovered = nodeData.ad_discovered !== false;
 
     // Populate fields in the info panel
@@ -169,7 +169,7 @@ document.getElementById('edit-button').addEventListener('click', function() {
         });
     } 
 
-    const dropdown = document.getElementById("edit-cites-dropdown"); // Adjust the ID as per your actual dropdown element
+    const dropdown = document.getElementById("edit-cites-dropdown");
     populateCitationsDropdown(dropdown, citesContainer);
     dropdown.style = 'none;'
 
@@ -190,7 +190,8 @@ document.addEventListener("DOMContentLoaded", function () {
             .filter(node => !node.data('isTimelineNode'))  // Filter out timeline nodes
             .map(node => ({
                 id: node.id(),
-                title: node.data().label
+                title: node.data().label,
+                date_created: node.data().date_created
             }));
     };
     
@@ -198,19 +199,29 @@ document.addEventListener("DOMContentLoaded", function () {
     // Function to populate dropdown for selecting citations
     window.populateCitationsDropdown = function(dropdown, selectedContainer) {
         dropdown.innerHTML = ""; // Clear existing dropdown items
-
+        const dateCreated = new Date(node.data().date_created);
+        const existingCitations = new Set(
+            cy.edges().filter(edge => edge.data('source') === node.id()).map(edge => edge.data('target'))
+        );
+        
         availableSources.forEach(source => {
-            let option = document.createElement("div");
-            option.textContent = source.title;
-            option.dataset.id = source.id;
-            option.classList.add("citation-option");
+            
+            
+            let testDateCreated =  new Date(source.date_created);
+            if(testDateCreated < dateCreated && !existingCitations.has(source.id)){
+                let option = document.createElement("div");
+                option.textContent = source.title;
+                option.dataset.id = source.id;
+                option.classList.add("citation-option");
 
-            option.addEventListener("click", function () {
-                addCitation(source.id, source.title, selectedContainer);
-                dropdown.style.display = "none"; // Hide dropdown after selection
-            });
+                option.addEventListener("click", function () {
+                    addCitation(source.id, source.title, selectedContainer);
+                    dropdown.style.display = "none"; // Hide dropdown after selection
+                });
 
-            dropdown.appendChild(option);
+                dropdown.appendChild(option);  
+            }
+            
         });
 
         // Show the dropdown
@@ -241,12 +252,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    document.getElementById("edit-cites-selector").addEventListener("click", function () {
-        populateCitationsDropdown(
-            document.getElementById("edit-cites-dropdown"),
-            document.getElementById("edit-selected-cites")
-        );
+    document.getElementById("edit-cites-selector").addEventListener("click", function (event) {
+        event.stopPropagation(); // Prevents click from immediately closing the dropdown
+    
+        const dropdown = document.getElementById("edit-cites-dropdown");
+        const selectedContainer = document.getElementById("edit-selected-cites");
+    
+        if (dropdown.style.display === "block") {
+            dropdown.style.display = "none"; // Close if already open
+        } else {
+            populateCitationsDropdown(dropdown, selectedContainer);
+            dropdown.style.display = "block"; // Open dropdown
+        }
     });
+    
+    // Close dropdown when clicking anywhere else
+    document.addEventListener("click", function (event) {
+        const dropdown = document.getElementById("edit-cites-dropdown");
+        const citesButton = document.getElementById("edit-cites-selector");
+    
+        if (dropdown.style.display === "block" && event.target !== dropdown && event.target !== citesButton) {
+            dropdown.style.display = "none"; // Close dropdown
+        }
+    });
+    
 
 
 
@@ -298,10 +327,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error('Failed to save changes');
             }
     
-            // Update Cytoscape node
-            if (node) { // Ensure a node is selected
-                edit_node(editedData, node.id());
-            }
+            
+            
+            edit_node(editedData, node.id());
+            
     
             // Update the view panel with the new data
             document.getElementById('source-title').innerText = editedData.title;
@@ -346,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
     
         const confirmDelete = confirm(`Are you sure you want to delete "${sourceTitle}"?`);
         if (!confirmDelete) return;
-        
+        document.getElementById('source-info-popup').checked = false;
         document.getElementById('edit-source-info-panel').style.display = 'none';
         document.getElementById('view-source-info-panel').style.display = 'none';
         try {

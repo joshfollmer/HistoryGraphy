@@ -99,7 +99,8 @@ function init_cy() {
                         
                         const targetNode = edge.target();
                         return targetNode.data('is_primary') ? '#006400' : '#008080'; // Green for primary, blue for secondary
-                    }
+                    },
+                    "opacity": 0.7 
                 }
             }
         ],
