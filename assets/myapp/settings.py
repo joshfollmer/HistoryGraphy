@@ -8,9 +8,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = False  # Ensure this is False in production
-
-ALLOWED_HOSTS = ['historygraphy.com', 'www.historygraphy.com']
+DEBUG = True  # Ensure this is False in production
+CSRF_TRUSTED_ORIGINS = [
+    'https://historygraphy.com',
+    'https://www.historygraphy.com',
+    'http://10.0.0.207:8000',  # Add localhost
+    '*'
+]
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
