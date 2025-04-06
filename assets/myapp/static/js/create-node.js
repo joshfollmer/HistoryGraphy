@@ -9,6 +9,7 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     const language = document.getElementById('language').value;
     const url = document.getElementById('link').value;
     const description = document.getElementById('description').value;
+    const publisher = document.getElementById('publisher').value;
 
     const citesContainer = document.getElementById("cites-container");
     const secondaryRadio = document.getElementById("secondary");
@@ -47,6 +48,7 @@ document.getElementById('create-node-form').addEventListener('submit', function(
         ad_created: adCreated, // true if AD, false if BC
         year_discovered: yearDiscovered,
         ad_discovered: adDiscovered, // true if AD, false if BC
+        publisher,
         description,
         url,
         language,

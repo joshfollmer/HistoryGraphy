@@ -26,6 +26,7 @@ window.populateData = function () {
     document.getElementById("source-author").textContent = nodeData.author || "N/A";
     document.getElementById("source-year-created").textContent = nodeData.year_created;
     document.getElementById("source-year-discovered").textContent = nodeData.year_discovered;
+    document.getElementById("source-publisher").textContent = nodeData.publisher || "N/A";
     document.getElementById("source-language").textContent = nodeData.language || "N/A";
 
     const linkContainer = document.getElementById("source-link");
@@ -112,6 +113,7 @@ document.getElementById('edit-button').addEventListener('click', function() {
     document.getElementById('edit-source-year-created').value = nodeData.year_created || "";
     document.getElementById('edit-source-year-discovered').value = nodeData.year_discovered || "";
     document.getElementById('edit-source-language').value = nodeData.language || "";
+    document.getElementById('edit-source-publisher').value = nodeData.publisher || "";
     document.getElementById('edit-source-link').value = nodeData.url || "";
     document.getElementById('edit-source-description').value = nodeData.description || "";
     
@@ -275,6 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
             year_discovered: document.getElementById('edit-source-year-discovered').value,
             ad_discovered : document.getElementById("edit-source-discovered-ad").checked,
             language: document.getElementById('edit-source-language').value,
+            publisher: document.getElementById('edit-source-publisher').value,
             url: document.getElementById('edit-source-link').value,
             description: document.getElementById('edit-source-description').value,
             is_primary: document.getElementById('edit-primary')?.checked || false,
@@ -311,6 +314,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('source-author').innerText = editedData.author;
             document.getElementById('source-year-created').innerText = editedData.year_created;
             document.getElementById('source-year-discovered').innerText = editedData.year_discovered;
+            document.getElementById('source-publisher').innerText = editedData.publisher;
             document.getElementById('source-language').innerText = editedData.language;
             document.getElementById('source-link').innerHTML = editedData.url ? `<a href="${editedData.url}" target="_blank">${editedData.url}</a>` : "N/A";
             document.getElementById('source-description').innerText = editedData.description;

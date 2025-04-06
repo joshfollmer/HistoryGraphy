@@ -231,6 +231,7 @@ def get_nodes(project_id):
                         "year_discovered": year_discovered,
                         "ad_discovered" : neighbor_node.get("ad_discovered"),
                         "is_primary": neighbor_node.get("is_primary", False),
+                        "publisher" : neighbor_node.get("publisher", ''),
                         "description": neighbor_node.get("description", ""),
                         "url": neighbor_node.get("url", ""),
                         "contributor": neighbor_node.get("contributor", ""),
@@ -284,6 +285,7 @@ def create_node(request):
         year_discovered = data.get("year_discovered", True)
         ad_discovered = data.get("ad_discovered", True)
         is_primary = data.get('is_primary', False)
+        publisher = sanitize_input(data.get('publisher'))
         description = sanitize_input(data.get('description'))
         url = sanitize_input(data.get('url'))
         language = sanitize_input(data.get('language'))
@@ -315,6 +317,7 @@ def create_node(request):
                 'ad_created' : node_data.get('ad_created'),
                 'year_discovered': node_data.get('year_discovered'),
                 'is_primary': node_data.get('is_primary', False),
+                'publisher' : node_data.get('publisher'),
                 'description': node_data.get('description', ''),
                 'url': node_data.get('url', ''),
                 'language': node_data.get('language', ''),
@@ -332,6 +335,7 @@ def create_node(request):
             ad_created: $ad_created,
             year_discovered: $year_discovered,
             ad_discovered: $ad_discovered,
+            publisher : $publisher,
             is_primary: $is_primary,
             description: $description,
             url: $url,
@@ -354,6 +358,7 @@ def create_node(request):
             'year_discovered': year_discovered,
             'ad_discovered': ad_discovered,
             'is_primary': is_primary,
+            'publisher': publisher,
             'description': description,
             'url': url,
             'language': language,
@@ -373,6 +378,7 @@ def create_node(request):
             'year_discovered': year_discovered,
             'is_primary': is_primary,
             'description': description,
+            'publisher' : publisher,
             'url': url,
             'language': language,
             'contributor': contributor,
@@ -400,6 +406,7 @@ def edit_source(request):
             new_ad_created = data.get('ad_created')
             new_year_discovered = data.get('year_discovered')
             new_ad_discovered = data.get('ad_discovered')
+            new_publisher = sanitize_input(data.get('publisher'))
             new_description = sanitize_input(data.get('description', ''))
             new_url = sanitize_input(data.get('url', ''))
             new_language = sanitize_input(data.get('language', 'Unknown'))
@@ -423,6 +430,7 @@ def edit_source(request):
                 n.ad_created = $new_ad_created,
                 n.year_discovered = $new_year_discovered,
                 n.ad_discovered = $new_ad_discovered,
+                n.publisher = $new_publisher,
                 n.description = $new_description,
                 n.url = $new_url,
                 n.language = $new_language,
@@ -445,6 +453,7 @@ def edit_source(request):
                 'new_ad_created' : new_ad_created,
                 'new_year_discovered': new_year_discovered,
                 'new_ad_discovered' : new_ad_discovered,
+                'new_publisher' : new_publisher,
                 'new_description': new_description,
                 'new_url': new_url,
                 'new_language': new_language,

@@ -119,11 +119,6 @@ function init_cy() {
         maxZoom: 2.0,
     });
 
-    
-
-    
-    
-    
     function addTimelineNodes() {
         // Round minYear up to the next multiple of 10
         let startYear = minYear % 10 === 0 ? minYear : Math.ceil(minYear / 10) * 10;

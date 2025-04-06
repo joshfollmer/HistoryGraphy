@@ -51,12 +51,12 @@
         <form method="POST" id="create-node-form" action="/create-node/">
             {% csrf_token %}
             <div class="node-attribute">
-                <p>Title:</p>
+                <p><strong>Title:</strong></p>
                 <input type="text" id="node-name" name="node_name" placeholder="Enter source title">
                 <p id="node-name-error" style="color: red; display: none;">Title is required</p>
             </div>
             <div class="node-attribute">
-                <p>Source Type:</p>
+                <p><strong>Source Type:</strong></p>
                 <input type="radio" id="primary" name="source_type" value="primary" style="display:none;">
                 <label for="primary" class="node-type-primary">Primary</label>
                 <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
@@ -79,11 +79,11 @@
 
             
             <div class="node-attribute">
-                <p>Author/creator:</p>
+                <p><strong>Author/creator:</strong></p>
                 <input type="text" id="author" name="author">
             </div>
             <div class="node-attribute">
-                <p>Year Created:</p>
+                <p><strong>Year Created:</strong></p>
                 
                 <input type="text" class="year-input" id="year-created" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
@@ -104,7 +104,7 @@
             
             
             <div class="node-attribute">
-                <p>Year Discovered:</p>
+                <p><strong>Year Discovered:</strong></p>
             
                 <input type="text" class="year-input" id="year-discovered" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
@@ -120,19 +120,24 @@
                     <label for="discovered-bc">BC</label>
                 </div>
             </div>
+
+            <div class="node-attribute">
+                <p><strong>Publisher:</strong></p>
+                <input type="text" id="publisher" name="publisher">
+            </div>
             
             <script src="{% static 'js/year.js' %}"></script>
             
             <div class="node-attribute">
-                <p>Language of source:</p>
+                <p><strong>Language of source:</strong></p>
                 <input type="text" id="language" name="language">
             </div>
             <div class="node-attribute">
-                <p>Link to source:</p>
+                <p><strong>Link to source:</strong></p>
                 <input type="text" id="link" name="link">
             </div>
             <div class="node-attribute">
-                <p>Description:</p>
+                <p><strong>Description:</strong></p>
                 <input type="text" id="description" name="description">
             </div>
            
@@ -188,6 +193,10 @@
         <div class="node-attribute">
             <p><strong>year Discovered:</strong></p>
             <p id="source-year-discovered">N/A</p> 
+        </div>
+        <div class="node-attribute">
+            <p><strong>Publisher:</strong></p>
+            <p id="source-publisher">N/A</p>
         </div>
 
         <div class="node-attribute">
@@ -311,12 +320,8 @@
             <p><strong>Author/creator:</strong></p>
             <input type="text" id="edit-source-author">
         </div>
-
-
-
-
         <div class="node-attribute">
-            <p>Year Created:</p>
+            <p><strong>Year Created:</strong></p>
         
             <input type="text" class="year-input" id="edit-source-year-created" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
@@ -334,12 +339,8 @@
         </div>
         
         <script src="{% static 'js/year.js' %}"></script>
-
-
-
-
         <div class="node-attribute">
-            <p>Year Discovered:</p>
+            <p><strong>Year Discovered:</strong></p>
         
             <input type="text" class="year-input" id="edit-source-year-discovered" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
                        oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
@@ -358,7 +359,10 @@
         
         <script src="{% static 'js/year.js' %}"></script>
             
-
+        <div class="node-attribute">
+            <p><strong>Publisher:</strong></p>
+            <input type="text" id="edit-source-publisher" name="edit-source-publisher">
+        </div>
         <div class="node-attribute">
             <p><strong>Language:</strong></p>
             <input type="text" id="edit-source-language">
