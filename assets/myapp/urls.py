@@ -32,8 +32,8 @@ urlpatterns = [
     path('edit-source/', views.edit_source, name = 'edit_source'),
     path('project/<int:project_id>/', views.view_project, name = 'view_project'),
     path('delete-source/', views.delete_source, name = 'delete_source'),
-    path('remove-source-from-project/', views.remove_source_from_project, name = 'remove_source_from_project')
-
+    path('remove-source-from-project/', views.remove_source_from_project, name = 'remove_source_from_project'),
+    path('parse-bib/', views.parse_bib, name = 'parse-bib'),
 ]
 
 

@@ -4,8 +4,8 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     const title = document.getElementById('node-name').value;
     const sourceType = document.querySelector('input[name="source_type"]:checked') ? document.querySelector('input[name="source_type"]:checked').value : null;
     const author = document.getElementById('author').value;
-    const dateCreated = document.getElementById('date-created').value;
-    let dateDiscovered = document.getElementById('date-discovered').value;
+    const yearCreated = document.getElementById('year-created').value;
+    let yearDiscovered = document.getElementById('year-discovered').value;
     const language = document.getElementById('language').value;
     const url = document.getElementById('link').value;
     const description = document.getElementById('description').value;
@@ -18,43 +18,42 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     const adDiscovered = document.getElementById('discovered-ad').checked; // true if AD, false if BC
 
     // Validate form
-    if (!title || !dateCreated) {
+    if (!title || !yearCreated) {
         alert('Please fill out all required fields');
         return;
     }
 
-    if (!dateDiscovered) {
-        dateDiscovered = dateCreated;
+    if (!yearDiscovered) {
+        yearDiscovered = yearCreated;
     }
+    
+    let nodeCites = [];
 
-    let selectedCites = [];
-    if (!(citesContainer.style.display = secondaryRadio.checked)) {
-        selectedCites = [];
-    } else {
-        selectedCites = Array.from(selectedCites)
+    if (secondaryRadio.checked && citesContainer.style.display !== 'none') {
+        nodeCites = Array.from(selectedCites)
             .map(nodeId => {
                 const node = nodes.find(n => n.data.id === nodeId);
                 return node ? node.data.label : null;
             })
-            .filter(title => title !== null); // Remove null values
+            .filter(label => label !== null); // Filter out any invalid ones
     }
-    console.log("Selected cites:", selectedCites);
-
+    
     // Create node object with new attributes
     const newNode = {
         title,
         author,
         is_primary: sourceType === 'primary',
-        date_created: dateCreated,
+        year_created: yearCreated,
         ad_created: adCreated, // true if AD, false if BC
-        date_discovered: dateDiscovered,
+        year_discovered: yearDiscovered,
         ad_discovered: adDiscovered, // true if AD, false if BC
         description,
         url,
         language,
         project_id: projectId,
-        selected_cites: selectedCites
+        selected_cites: nodeCites
     };
+
 
     // Send data to Django server
     fetch('/create-node/', {
@@ -73,7 +72,7 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     })
     .then(data => {
         console.log("Response data:", data);
-        add_node(data);
+        window.location.reload();
         loadAvailableSources();
     })
     .catch(error => {
