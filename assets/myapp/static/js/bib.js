@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const message = `Current source info: Title: ${sourceTitle}, Author: ${sourceAuthor}, Date created: ${sourceYear}. Bibliography: ${bibliographyText}`;
     
         try {
+            document.getElementById('bib-overlay').style.display = 'flex';
             const response = await fetch('/parse-bib/', {
                 method: 'POST', 
                 headers: {
@@ -29,7 +30,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }
     
             console.log("Bibliography submitted successfully!");
-            console.log("Parsed Bibliography Response:", result.response);
+
+            window.location.reload();
         } catch (error) {
             console.error("Error parsing bibliography:", error);
         }

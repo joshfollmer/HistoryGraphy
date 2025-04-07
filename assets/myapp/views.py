@@ -546,6 +546,33 @@ def remove_source_from_project(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
+def save_citations_to_neo4j(citations):
+
+    driver = get_neo4j_driver()
+    session = driver.session()
+
+    query = """
+    UNWIND $citations AS citation
+    MERGE (s:Source {title: citation.title})
+    SET 
+        s.author = citation.author,
+        s.publisher = citation.Publisher,
+        s.year_created = citation.year_created,
+        s.ad_created = citation.ad_created,
+        s.is_primary = citation.is_primary,
+        s.language = citation.language
+    WITH s
+    MATCH (p:Project {project_id: $project_id})
+    MERGE (p)-[:CONNECTED_TO]->(s)
+    RETURN s.title AS title
+    """
+
+    with driver.session() as session:
+        result = session.run(query, citations=citations)
+        session.close()
+        return [record["s"] for record in result]
+
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -554,76 +581,99 @@ def parse_bib(request):
         return JsonResponse({"error": "Invalid request method."}, status=405)
 
     try:
-        # Parse request body
         data = json.loads(request.body)
         user_message = data.get("message", "")
-
         if not user_message:
             return JsonResponse({"error": "No bibliography text provided."}, status=400)
 
-        # Initialize OpenAI client
         client = OpenAI(api_key=settings.GPT_KEY)
 
-        # OpenAI API request
         response = client.responses.create(
-            model="gpt-4",  # Ensure you are using the correct model
-            input=[
-                {
-                    "role": "system",
-                    "content": [
+            model="gpt-4o-mini",
+             input=[{
+                "role": "system",
+                "content": """You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
+
+                        ### **Parsing Rules**
+                        1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).
+                        2. **If the input does not contain any citations, return:** `"Invalid format"`.
+                        3. **If the same source appears multiple times in different citations, only include it once.**
+                        4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**
+                        5. **Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false**
+                        6. **You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**
+
+                        PRIMARY VS. SECONDARY CLASSIFICATION RULES
+                        For each citation, decide whether the source is primary or secondary using this checklist:
+
+                        Primary Source (is_primary: true) IF:
+                        The work includes original documents (e.g. letters, interviews, speeches, transcripts).
+                        It contains government or legal records made during the event (e.g. trial transcripts, wartime reports).
+                        It was written or published by a key participant or official during the event (e.g., a general’s war report).
+                        It contains raw data or statistics collected in real-time.
+
+                        Examples of primary sources:
+                        Les Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)
+                        Nazi-Soviet Relations: Documents from the German Foreign Office
+                        Pearl Harbor Attack: Hearings before the Joint Committee
+                        Nazi Conspiracy and Aggression (trial documents)
+
+                        Secondary Source (is_primary: false) IF:
+                        It is a history or analysis written after the event, even if it uses primary sources.
+                        It is an official or scholarly history written by historians or military staff post-war.
+                        It is published by an academic press or as part of a retrospective government series.
+                        Make a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.
+
+                        ### **Output Format**
+                        Return the extracted citations as a valid JSON object with the following fields:
+
+                        ```json
                         {
-                            "type": "input_text",
-                            "text": (
-                                "You are a tool that parses historical bibliographic citations. "
-                                "You will be provided with the source that is doing the citing, followed by a list of citations. "
-                                "Your task is to extract key bibliographic details from each citation.\n\n"
-                                "### **Parsing Rules**\n"
-                                "1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n"
-                                "2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n"
-                                "3. **If the same source appears multiple times in different citations, only include it once.**\n"
-                                "4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n"
-                                "5. **Do not return publishers or editors as authors. Only list the original creator.**\n\n"
-                                "### **Output JSON Format**\n"
-                                "Each citation should be returned as a JSON object with the following fields:\n\n"
-                                "```json\n"
-                                "{\n"
-                                "  \"title\": \"Title of the work\",\n"
-                                "  \"author\": \"Original author or 'Unknown' if uncertain\",\n"
-                                "  \"year_created\": \"Exact year or an educated estimate\",\n"
-                                "  \"ad_created\": true/false,\n"
-                                "  \"is_primary\": true/false,\n"
-                                "  \"language\": \"Original language of the work\"\n"
-                                "}\n"
-                                "```"
-                            ),
+                        "title": "Title of the work",
+                        "author": "Original author, or 'Unknown' if uncertain",
+                        "Publisher": "Publisher of the work",
+                        "year_created": "Exact year or an educated estimate",
+                        "ad_created": true/false,
+                        "is_primary": true/false,
+                        "language": "Original language of the work"
                         }
-                    ],
-                },
-                {"role": "user", "content": user_message},
-            ],
-            text={"format": {"type": "text"}},
-            temperature=1,
+                        """ },
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                "type": "input_text",
+                                "text": user_message
+                                }
+                            ]
+                        },
+                        ],
+            text={"format": {"type": "json_object"}},
+            tools=[],
+            temperature=0.3,
             max_output_tokens=2048,
             top_p=1,
-            store=True
+            store=False
         )
 
-        # Extract AI response text from the response object
-        ai_response = response['text']  # Adjust according to OpenAI's response structure
-
-        # Log the response
+        ai_response = response.text if hasattr(response, 'text') else response['text']
         logger.debug("OpenAI response: %s", ai_response)
 
-        # Return the AI response as JSON
-        return JsonResponse({"response": ai_response})
+        response_data = json.loads(ai_response)
+        citations = response_data.get("citations", [])
+        if not citations:
+            return JsonResponse({"error": "No citations found in parsed response."}, status=400)
+
+        saved_nodes = save_citations_to_neo4j(citations)
+
+        return JsonResponse({
+            "saved_titles": [node["title"] for node in saved_nodes]
+        })
 
     except json.JSONDecodeError:
-        # Log and handle JSON decode error
         logger.error("Error parsing JSON request: %s", request.body)
         return JsonResponse({"error": "Invalid JSON format."}, status=400)
-    
+
     except Exception as e:
-        # Log and handle general exceptions
         logger.error("OpenAI API error: %s", str(e))
         return JsonResponse({"error": f"OpenAI API error: {str(e)}"}, status=500)
 
