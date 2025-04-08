@@ -589,70 +589,38 @@ def parse_bib(request):
         client = OpenAI(api_key=settings.GPT_KEY)
 
         response = client.responses.create(
-            model="gpt-4o-mini",
-             input=[{
-                "role": "system",
-                "content": """You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
-
-                        ### **Parsing Rules**
-                        1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).
-                        2. **If the input does not contain any citations, return:** `"Invalid format"`.
-                        3. **If the same source appears multiple times in different citations, only include it once.**
-                        4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**
-                        5. **Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false**
-                        6. **You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**
-
-                        PRIMARY VS. SECONDARY CLASSIFICATION RULES
-                        For each citation, decide whether the source is primary or secondary using this checklist:
-
-                        Primary Source (is_primary: true) IF:
-                        The work includes original documents (e.g. letters, interviews, speeches, transcripts).
-                        It contains government or legal records made during the event (e.g. trial transcripts, wartime reports).
-                        It was written or published by a key participant or official during the event (e.g., a general’s war report).
-                        It contains raw data or statistics collected in real-time.
-
-                        Examples of primary sources:
-                        Les Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)
-                        Nazi-Soviet Relations: Documents from the German Foreign Office
-                        Pearl Harbor Attack: Hearings before the Joint Committee
-                        Nazi Conspiracy and Aggression (trial documents)
-
-                        Secondary Source (is_primary: false) IF:
-                        It is a history or analysis written after the event, even if it uses primary sources.
-                        It is an official or scholarly history written by historians or military staff post-war.
-                        It is published by an academic press or as part of a retrospective government series.
-                        Make a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.
-
-                        ### **Output Format**
-                        Return the extracted citations as a valid JSON object with the following fields:
-
-                        ```json
-                        {
-                        "title": "Title of the work",
-                        "author": "Original author, or 'Unknown' if uncertain",
-                        "Publisher": "Publisher of the work",
-                        "year_created": "Exact year or an educated estimate",
-                        "ad_created": true/false,
-                        "is_primary": true/false,
-                        "language": "Original language of the work"
-                        }
-                        """ },
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                "type": "input_text",
-                                "text": user_message
-                                }
-                            ]
-                        },
-                        ],
-            text={"format": {"type": "json_object"}},
-            tools=[],
-            temperature=0.3,
-            max_output_tokens=2048,
-            top_p=1,
-            store=False
+        model="gpt-4o-mini",
+        input=[
+            {
+            "role": "system",
+            "content": [
+                {
+                "type": "input_text",
+                "text": "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.\n\n### **Parsing Rules**\n1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n3. **If the same source appears multiple times in different citations, only include it once.**\n4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false**\n6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\nPRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\nPrimary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\nIt was written or published by a key participant or official during the event (e.g., a general’s war report).\n\nIt contains raw data or statistics collected in real-time.\n\nExamples of primary sources:\n\nLes Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)\n\nNazi-Soviet Relations: Documents from the German Foreign Office\n\nPearl Harbor Attack: Hearings before the Joint Committee\n\nNazi Conspiracy and Aggression (trial documents)\n\n Secondary Source (is_primary: false) IF:\nIt is a history or analysis written after the event, even if it uses primary sources.\n\nIt is an official or scholarly history written by historians or military staff post-war.\n\nIt is published by an academic press or as part of a retrospective government series.\n\nMake a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.\n\n\n### **Output JSON Format**\nEach citation should be returned as a JSON object with the following fields:\n\n```json\n{\n  \"title\": \"Title of the work\",\n  \"author\": \"Original author, or 'Unknown' if uncertain\",\n  \"Publisher\": \"Publisher of the work\",\n  \"year_created\": \"Exact year or an educated estimate\",\n  \"ad_created\": true/false,\n  \"is_primary\": true/false,\n  \"language\": \"Original language of the work\"\n}\n\n"
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "input_text",
+                "text": user_message
+                }
+            ]
+            }
+        ],
+        text={
+            "format": {
+            "type": "json_object"
+            }
+        },
+        reasoning={},
+        tools=[],
+        temperature=1,
+        max_output_tokens=2048,
+        top_p=1,
+        store=False
         )
 
         ai_response = response.text if hasattr(response, 'text') else response['text']
