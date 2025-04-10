@@ -4,7 +4,7 @@ let scaleFactor = 15;
 let randomXRange = 500;  
 let cy;
 let yearPositions = {};
-let xSpacing = 150;  
+let xSpacing = 700;  
 
 
 let earliestYear = Math.min(...nodes.map(node => {
@@ -12,9 +12,23 @@ let earliestYear = Math.min(...nodes.map(node => {
     return node.data.ad_discovered === false ? -year : year; // Convert BC years to negative
 }));
 
-let minYear = earliestYear; // This now correctly handles BC
+
+let minYear = earliestYear; 
+
 let maxYear = Math.max(...nodes.map(node => node.data.year_discovered));
 
+const targetHeight = 2000; 
+let yearRange = maxYear - minYear;
+
+if (yearRange <= 0) {
+    scaleFactor = 100; // fallback to a default scale if all nodes are from the same year
+} else {
+    scaleFactor = targetHeight / yearRange;
+}
+
+function truncateLabel(text, maxLength = 40) {
+    return text.length > maxLength ? text.substring(0, maxLength) + "…" : text;
+}
 
 let node;
 const rng = new Math.seedrandom(projectId); 
@@ -41,8 +55,12 @@ function init_cy() {
                         let inDegree = node.incomers('edge').sources().length;
                         return Math.max(25, 10 + inDegree * 5);
                     },
-                    "label": 'data(label)',
-                    "color": "#000",  // Black text for visibility
+                    "label": function (node) {
+                        let label = node.data('label');
+                        return truncateLabel(label, 40);  // Truncate label at display time
+                    },
+
+                    "color": "#000",  
                     "text-valign": "top", // Align text above the node
                     "text-halign": "center",
                     "text-margin-y": "-5px", // Moves the text slightly upwards
@@ -120,38 +138,57 @@ function init_cy() {
     });
 
     function addTimelineNodes() {
-        // Round minYear up to the next multiple of 10
-        let startYear = minYear % 10 === 0 ? minYear : Math.ceil(minYear / 10) * 10;
-        startYear -= 10;
+        // Dynamically adjust timeline interval based on scaleFactor
+        let timelineInterval;
     
-        // Add timeline nodes only for years within the range of minYear and maxYear
-        for (let year = startYear; year <= maxYear; year += 10) {
+        if (scaleFactor >= 100) {
+            timelineInterval = 1; 
+        }    // Extremely detailed
+        else if (scaleFactor >= 80) {
+            timelineInterval = 5;     // Very detailed
+        } else if (scaleFactor >= 40) {
+            timelineInterval = 10;    // Default
+        } else if (scaleFactor >= 20) {
+            timelineInterval = 20;    // Compressed
+        } else {
+            timelineInterval = 50;    // Very compressed
+        }
+    
+        // Round startYear up to nearest interval
+        let startYear = minYear % timelineInterval === 0
+            ? minYear
+            : Math.ceil(minYear / timelineInterval) * timelineInterval;
+        startYear -= timelineInterval;  // Add buffer at top
+    
+        // Add timeline nodes within the visible year range
+        for (let year = startYear; year <= maxYear; year += timelineInterval) {
             let displayYear = year < 0 ? `${Math.abs(year)} BC` : `${year} AD`;
     
             let nodeId = `node-${year}`;
-            let yPos = (year - minYear) * scaleFactor;
             let rightNodeId = `node-right-${year}`;
+            let yPos = (year - minYear) * scaleFactor;
     
+            // Add timeline nodes if they don't exist yet
             if (!cy.getElementById(nodeId).length) {
-                cy.add({
-                    group: 'nodes',
-                    data: { id: nodeId, label: displayYear, isTimelineNode: true },
-                    position: { x: -100, y: yPos }
-                });
-    
-                cy.add({
-                    group: 'nodes',
-                    data: { id: rightNodeId, label: displayYear, isTimelineNode: true },
-                    position: { x: 1000, y: yPos }
-                });
-    
-                cy.add({
-                    group: 'edges',
-                    data: { source: nodeId, target: rightNodeId }
-                });
+                cy.add([
+                    {
+                        group: 'nodes',
+                        data: { id: nodeId, label: displayYear, isTimelineNode: true },
+                        position: { x: -100, y: yPos }
+                    },
+                    {
+                        group: 'nodes',
+                        data: { id: rightNodeId, label: displayYear, isTimelineNode: true },
+                        position: { x: 5000, y: yPos }
+                    },
+                    {
+                        group: 'edges',
+                        data: { source: nodeId, target: rightNodeId }
+                    }
+                ]);
     
                 if (year > startYear) {
-                    let prevYear = year - 10;
+                    let prevYear = year - timelineInterval;
                     let prevNodeId = `node-${prevYear}`;
     
                     cy.add({
@@ -162,6 +199,7 @@ function init_cy() {
             }
         }
     }
+    
     
     addTimelineNodes();
     
@@ -177,6 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (node.data.ad_discovered === false) {
             year = -year; 
         }
+     
         let yPosition = (year - minYear) * scaleFactor;  // Scale based on year difference
 
         // Handle horizontal spacing
@@ -184,11 +223,10 @@ document.addEventListener("DOMContentLoaded", function () {
             yearPositions[year] = { count: 0 };
         }
         const xOffset = rng() * randomXRange + yearPositions[year].count * xSpacing;
-
         node.position = { x: 100 + xOffset, y: yPosition };
-
         // Increment counter for this year (for horizontal shifting)
         yearPositions[year].count += 1;
+
     });
 
     init_cy();

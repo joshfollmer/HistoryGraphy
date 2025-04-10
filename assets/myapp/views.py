@@ -227,9 +227,8 @@ def get_nodes(project_id):
                         "label": node_title,  # Use title as the label
                         "author": neighbor_node.get("author", "Unknown"),
                         "year_created": year_created,
-                        "ad_created" : neighbor_node.get("ad_created"),
                         "year_discovered": year_discovered,
-                        "ad_discovered" : neighbor_node.get("ad_discovered"),
+                        "ad_discovered" : neighbor_node.get("ad_created"),
                         "is_primary": neighbor_node.get("is_primary", False),
                         "publisher" : neighbor_node.get("publisher", ''),
                         "description": neighbor_node.get("description", ""),
@@ -546,36 +545,48 @@ def remove_source_from_project(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-def save_citations_to_neo4j(citations):
-
+def save_citations_to_neo4j(project_id, citations, current_source):
     driver = get_neo4j_driver()
-    session = driver.session()
 
     query = """
     UNWIND $citations AS citation
-    MERGE (s:Source {title: citation.title})
+    // Merge the cited source
+    MERGE (cited:Source {title: citation.title})
     SET 
-        s.author = citation.author,
-        s.publisher = citation.Publisher,
-        s.year_created = citation.year_created,
-        s.ad_created = citation.ad_created,
-        s.is_primary = citation.is_primary,
-        s.language = citation.language
-    WITH s
+        cited.author = citation.author,
+        cited.publisher = citation.Publisher,
+        cited.year_created = citation.year_created,
+        cited.year_discovered = citation.year_created,
+        cited.ad_created = citation.ad_created,
+        cited.is_primary = citation.is_primary,
+        cited.language = citation.language
+
+    // Match the project
+    WITH cited
     MATCH (p:Project {project_id: $project_id})
-    MERGE (p)-[:CONNECTED_TO]->(s)
-    RETURN s.title AS title
+    MERGE (p)-[:CONNECTED_TO]->(cited)
+
+    // Match the citing source
+    WITH cited
+    MATCH (citing:Source {title: $current_source})
+    MERGE (citing)-[:CITES]->(cited)
+
+    RETURN cited.title AS title
     """
 
+    params = {
+        "project_id": project_id,
+        "citations": citations,
+        "current_source": current_source
+    }
+
     with driver.session() as session:
-        result = session.run(query, citations=citations)
-        session.close()
-        return [record["s"] for record in result]
+        result = session.run(query, params)
+        return [record["title"] for record in result]
 
 
 # Set up logging
 logger = logging.getLogger(__name__)
-
 def parse_bib(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method."}, status=405)
@@ -583,10 +594,44 @@ def parse_bib(request):
     try:
         data = json.loads(request.body)
         user_message = data.get("message", "")
+        project_id = int(data.get("projectId"))
+        current_source = data.get("currentSource", "")
         if not user_message:
             return JsonResponse({"error": "No bibliography text provided."}, status=400)
 
         client = OpenAI(api_key=settings.GPT_KEY)
+
+        instructions = """
+        "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
+        \n\n
+        ### **Parsing Rules**\n
+        # 1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n
+        # 2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n
+        # 3. **If the same source appears multiple times in different citations, only include it once.**\n
+        # 4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n
+        # 5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false. You MUST provide a year, if a year is not present in the citation, make an educated guess based on other citations.**\n
+        # 6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\n
+        # PRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\n
+        # Primary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\n
+        # It was written or published by a key participant or official during the event (e.g., a general’s war report).\n\n
+        # It contains raw data or statistics collected in real-time.\n\nExamples of primary sources:\n\n
+        # Les Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)\n\n
+        # Nazi-Soviet Relations: Documents from the German Foreign Office\n\nPearl Harbor Attack: Hearings before the Joint Committee\n\n
+        # Nazi Conspiracy and Aggression (trial documents)\n\n Secondary Source (is_primary: false) IF:\n
+        # It is a history or analysis written after the event, even if it uses primary sources.\n\n
+        # It is an official or scholarly history written by historians or military staff post-war.\n\nIt is published by an academic press or as part of a retrospective government series.\n\n
+        # Make a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.\n\n\n### **Output JSON Format**\n
+        # Each citation should be returned as a JSON object with the following fields:\n\n
+        # ```json\n
+        # {\n
+        #   \"title\": \"Title of the work\",
+        # \n  \"author\": \"Original author, or 'Unknown' if uncertain\",
+        # \n  \"Publisher\": \"Publisher of the work\",\
+        # n  \"year_created\": \"Exact year or an educated estimate\",\n  
+        # \"ad_created\": true/false,\n  
+        # \"is_primary\": true/false,\n  
+        # \"language\": \"Original language of the work\"\n}\n\n"
+        """
 
         response = client.responses.create(
         model="gpt-4o-mini",
@@ -596,7 +641,7 @@ def parse_bib(request):
             "content": [
                 {
                 "type": "input_text",
-                "text": "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.\n\n### **Parsing Rules**\n1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n3. **If the same source appears multiple times in different citations, only include it once.**\n4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false**\n6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\nPRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\nPrimary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\nIt was written or published by a key participant or official during the event (e.g., a general’s war report).\n\nIt contains raw data or statistics collected in real-time.\n\nExamples of primary sources:\n\nLes Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)\n\nNazi-Soviet Relations: Documents from the German Foreign Office\n\nPearl Harbor Attack: Hearings before the Joint Committee\n\nNazi Conspiracy and Aggression (trial documents)\n\n Secondary Source (is_primary: false) IF:\nIt is a history or analysis written after the event, even if it uses primary sources.\n\nIt is an official or scholarly history written by historians or military staff post-war.\n\nIt is published by an academic press or as part of a retrospective government series.\n\nMake a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.\n\n\n### **Output JSON Format**\nEach citation should be returned as a JSON object with the following fields:\n\n```json\n{\n  \"title\": \"Title of the work\",\n  \"author\": \"Original author, or 'Unknown' if uncertain\",\n  \"Publisher\": \"Publisher of the work\",\n  \"year_created\": \"Exact year or an educated estimate\",\n  \"ad_created\": true/false,\n  \"is_primary\": true/false,\n  \"language\": \"Original language of the work\"\n}\n\n"
+                "text": instructions
                 }
             ]
             },
@@ -623,19 +668,29 @@ def parse_bib(request):
         store=False
         )
 
-        ai_response = response.text if hasattr(response, 'text') else response['text']
+        try:
+            ai_response = response.output[0].content[0].text
+            response_data = json.loads(ai_response)
+
+        except (AttributeError, KeyError, json.JSONDecodeError) as e:
+            logger.error("Failed to parse OpenAI response: %s", str(e))
+            return JsonResponse({"error": "Invalid format returned by OpenAI."}, status=500)
+
+
         logger.debug("OpenAI response: %s", ai_response)
 
-        response_data = json.loads(ai_response)
         citations = response_data.get("citations", [])
         if not citations:
             return JsonResponse({"error": "No citations found in parsed response."}, status=400)
 
-        saved_nodes = save_citations_to_neo4j(citations)
+        saved_titles = save_citations_to_neo4j(project_id, citations, current_source)
 
         return JsonResponse({
-            "saved_titles": [node["title"] for node in saved_nodes]
-        })
+            "success": True,
+            "saved_citations": saved_titles
+        }, status=200)
+
+
 
     except json.JSONDecodeError:
         logger.error("Error parsing JSON request: %s", request.body)

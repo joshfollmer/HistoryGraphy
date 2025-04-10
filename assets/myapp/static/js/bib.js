@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message }) 
+                body: JSON.stringify({ message: message, projectId: projectId, currentSource: sourceTitle }) 
             });
     
             if (!response.ok) {
