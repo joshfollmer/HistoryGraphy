@@ -17,7 +17,7 @@ let minYear = earliestYear;
 
 let maxYear = Math.max(...nodes.map(node => node.data.year_discovered));
 
-const targetHeight = 2000; 
+const targetHeight = document.getElementById('cy').clientHeight;
 let yearRange = maxYear - minYear;
 
 if (yearRange <= 0) {
@@ -25,6 +25,7 @@ if (yearRange <= 0) {
 } else {
     scaleFactor = targetHeight / yearRange;
 }
+
 
 function truncateLabel(text, maxLength = 40) {
     return text.length > maxLength ? text.substring(0, maxLength) + "…" : text;
