@@ -91,6 +91,7 @@ WSGI_APPLICATION = 'myapp.wsgi.application'
 SUPABASE_URL = os.getenv('SUPABASE_URL')  
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')  
 
+GPT_KEY = os.getenv('GPT_KEY')
 
 
 

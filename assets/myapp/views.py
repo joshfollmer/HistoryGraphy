@@ -13,8 +13,9 @@ from neo4j import GraphDatabase
 import os
 import json
 from django.http import JsonResponse
-from datetime import datetime
 from django.utils.html import escape
+from openai import OpenAI
+import logging
 
 
 def get_supabase_client() -> Client:
@@ -214,14 +215,10 @@ def get_nodes(project_id):
             
             # Because of how the query gets returned, if we don't do this check it will process each edge as a new node
             if node_title not in added_nodes:
-                date_created = neighbor_node.get("date_created", None)
-                date_discovered = neighbor_node.get("date_discovered", None)
+                year_created = neighbor_node.get("year_created", None)
+                year_discovered = neighbor_node.get("year_discovered", None)
 
-                # If the date fields exist, convert them to string (ISO format)
-                if date_created:
-                    date_created = date_created.isoformat()
-                if date_discovered:
-                    date_discovered = date_discovered.isoformat()
+             
 
                 # Collect node data for the neighbor
                 nodes.append({
@@ -229,11 +226,11 @@ def get_nodes(project_id):
                         "id": node_title,  # Use title as the ID
                         "label": node_title,  # Use title as the label
                         "author": neighbor_node.get("author", "Unknown"),
-                        "date_created": date_created,
-                        "ad_created" : neighbor_node.get("ad_created"),
-                        "date_discovered": date_discovered,
-                        "ad_discovered" : neighbor_node.get("ad_discovered"),
+                        "year_created": year_created,
+                        "year_discovered": year_discovered,
+                        "ad_discovered" : neighbor_node.get("ad_created"),
                         "is_primary": neighbor_node.get("is_primary", False),
+                        "publisher" : neighbor_node.get("publisher", ''),
                         "description": neighbor_node.get("description", ""),
                         "url": neighbor_node.get("url", ""),
                         "contributor": neighbor_node.get("contributor", ""),
@@ -276,28 +273,26 @@ def create_node(request):
     if request.method == 'POST':
         data = json.loads(request.body)
 
-        # Date handling
-        date_created_str = data.get('date_created')
-        date_discovered_str = data.get('date_discovered', date_created_str)
-
-        date_created_datetime = datetime.strptime(date_created_str, '%Y-%m-%d').date()
-        date_discovered_datetime = datetime.strptime(date_discovered_str, '%Y-%m-%d').date()
 
         project_id = int(data.get('project_id'))  # Project ID
 
         # Setting the node properties
         title = sanitize_input(data.get('title', 'Untitled'))
         author = sanitize_input(data.get('author', 'Unknown'))
-        date_created = date_created_datetime
+        year_created = data.get('year_created', 'Unknown')
         ad_created = data.get("ad_created", True)
-        date_discovered = date_discovered_datetime
+        year_discovered = data.get("year_discovered", True)
         ad_discovered = data.get("ad_discovered", True)
         is_primary = data.get('is_primary', False)
+        publisher = sanitize_input(data.get('publisher'))
         description = sanitize_input(data.get('description'))
         url = sanitize_input(data.get('url'))
         language = sanitize_input(data.get('language'))
         contributor = request.user.username
         cites = data.get('selected_cites', [])
+
+        print(year_created)
+        print(year_discovered)
 
         # Neo4j connection setup
         driver = get_neo4j_driver()
@@ -317,9 +312,11 @@ def create_node(request):
             return JsonResponse({
                 'title': node_data['title'],
                 'author': node_data.get('author', 'Unknown'),
-                'date_created': node_data.get('date_created'),
-                'date_discovered': node_data.get('date_discovered'),
+                'year_created': node_data.get('year_created'),
+                'ad_created' : node_data.get('ad_created'),
+                'year_discovered': node_data.get('year_discovered'),
                 'is_primary': node_data.get('is_primary', False),
+                'publisher' : node_data.get('publisher'),
                 'description': node_data.get('description', ''),
                 'url': node_data.get('url', ''),
                 'language': node_data.get('language', ''),
@@ -333,10 +330,11 @@ def create_node(request):
         CREATE (n:Source {
             title: $title,
             author: $author,
-            date_created: $date_created,
+            year_created: $year_created,
             ad_created: $ad_created,
-            date_discovered: $date_discovered,
+            year_discovered: $year_discovered,
             ad_discovered: $ad_discovered,
+            publisher : $publisher,
             is_primary: $is_primary,
             description: $description,
             url: $url,
@@ -354,11 +352,12 @@ def create_node(request):
         params = {
             'title': title,
             'author': author,
-            'date_created': date_created,
+            'year_created': year_created,
             'ad_created': ad_created,
-            'date_discovered': date_discovered,
+            'year_discovered': year_discovered,
             'ad_discovered': ad_discovered,
             'is_primary': is_primary,
+            'publisher': publisher,
             'description': description,
             'url': url,
             'language': language,
@@ -374,10 +373,11 @@ def create_node(request):
         return JsonResponse({
             'title': title,
             'author': author,
-            'date_created': date_created,
-            'date_discovered': date_discovered,
+            'year_created': year_created,
+            'year_discovered': year_discovered,
             'is_primary': is_primary,
             'description': description,
+            'publisher' : publisher,
             'url': url,
             'language': language,
             'contributor': contributor,
@@ -401,10 +401,11 @@ def edit_source(request):
             data = json.loads(request.body)
             node_title = data.get('title')
             new_author = sanitize_input(data.get('author', 'Unknown'))
-            new_date_created = data.get('date_created')
+            new_year_created = data.get('year_created')
             new_ad_created = data.get('ad_created')
-            new_date_discovered = data.get('date_discovered')
+            new_year_discovered = data.get('year_discovered')
             new_ad_discovered = data.get('ad_discovered')
+            new_publisher = sanitize_input(data.get('publisher'))
             new_description = sanitize_input(data.get('description', ''))
             new_url = sanitize_input(data.get('url', ''))
             new_language = sanitize_input(data.get('language', 'Unknown'))
@@ -414,14 +415,9 @@ def edit_source(request):
 
 
                    
-            # Convert date strings to datetime objects
-            if new_date_created:
-                new_date_created = datetime.strptime(new_date_created, '%Y-%m-%d').date()
-            if new_date_discovered:
-                new_date_discovered = datetime.strptime(new_date_discovered, '%Y-%m-%d').date()
-
-            if(new_date_discovered < new_date_created):
-                new_date_discovered = new_date_created
+         
+            if(new_year_discovered < new_year_created):
+                new_year_discovered = new_year_created
 
             driver = get_neo4j_driver()
             session = driver.session()
@@ -429,10 +425,11 @@ def edit_source(request):
             query = """
             MATCH (p:Project)-[:CONNECTED_TO]->(n:Source {title: $node_title})
             SET n.author = $new_author,
-                n.date_created = $new_date_created,
+                n.year_created = $new_year_created,
                 n.ad_created = $new_ad_created,
-                n.date_discovered = $new_date_discovered,
+                n.year_discovered = $new_year_discovered,
                 n.ad_discovered = $new_ad_discovered,
+                n.publisher = $new_publisher,
                 n.description = $new_description,
                 n.url = $new_url,
                 n.language = $new_language,
@@ -451,10 +448,11 @@ def edit_source(request):
             params = {
                 'node_title': node_title,
                 'new_author': new_author,
-                'new_date_created': new_date_created,
+                'new_year_created': new_year_created,
                 'new_ad_created' : new_ad_created,
-                'new_date_discovered': new_date_discovered,
+                'new_year_discovered': new_year_discovered,
                 'new_ad_discovered' : new_ad_discovered,
+                'new_publisher' : new_publisher,
                 'new_description': new_description,
                 'new_url': new_url,
                 'new_language': new_language,
@@ -545,3 +543,160 @@ def remove_source_from_project(request):
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+def save_citations_to_neo4j(project_id, citations, current_source):
+    driver = get_neo4j_driver()
+
+    query = """
+    UNWIND $citations AS citation
+    // Merge the cited source
+    MERGE (cited:Source {title: citation.title})
+    SET 
+        cited.author = citation.author,
+        cited.publisher = citation.Publisher,
+        cited.year_created = citation.year_created,
+        cited.year_discovered = citation.year_created,
+        cited.ad_created = citation.ad_created,
+        cited.is_primary = citation.is_primary,
+        cited.language = citation.language
+
+    // Match the project
+    WITH cited
+    MATCH (p:Project {project_id: $project_id})
+    MERGE (p)-[:CONNECTED_TO]->(cited)
+
+    // Match the citing source
+    WITH cited
+    MATCH (citing:Source {title: $current_source})
+    MERGE (citing)-[:CITES]->(cited)
+
+    RETURN cited.title AS title
+    """
+
+    params = {
+        "project_id": project_id,
+        "citations": citations,
+        "current_source": current_source
+    }
+
+    with driver.session() as session:
+        result = session.run(query, params)
+        return [record["title"] for record in result]
+
+
+# Set up logging
+logger = logging.getLogger(__name__)
+def parse_bib(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method."}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        user_message = data.get("message", "")
+        project_id = int(data.get("projectId"))
+        current_source = data.get("currentSource", "")
+        if not user_message:
+            return JsonResponse({"error": "No bibliography text provided."}, status=400)
+
+        client = OpenAI(api_key=settings.GPT_KEY)
+
+        instructions = """
+        "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
+        \n\n
+        ### **Parsing Rules**\n
+        # 1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n
+        # 2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n
+        # 3. **If the same source appears multiple times in different citations, only include it once.**\n
+        # 4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n
+        # 5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false. You MUST provide a year, if a year is not present in the citation, make an educated guess based on other citations.**\n
+        # 6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\n
+        # PRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\n
+        # Primary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\n
+        # It was written or published by a key participant or official during the event (e.g., a general’s war report).\n\n
+        # It contains raw data or statistics collected in real-time.\n\nExamples of primary sources:\n\n
+        # Les Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)\n\n
+        # Nazi-Soviet Relations: Documents from the German Foreign Office\n\nPearl Harbor Attack: Hearings before the Joint Committee\n\n
+        # Nazi Conspiracy and Aggression (trial documents)\n\n Secondary Source (is_primary: false) IF:\n
+        # It is a history or analysis written after the event, even if it uses primary sources.\n\n
+        # It is an official or scholarly history written by historians or military staff post-war.\n\nIt is published by an academic press or as part of a retrospective government series.\n\n
+        # Make a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.\n\n\n### **Output JSON Format**\n
+        # Each citation should be returned as a JSON object with the following fields:\n\n
+        # ```json\n
+        # {\n
+        #   \"title\": \"Title of the work\",
+        # \n  \"author\": \"Original author, or 'Unknown' if uncertain\",
+        # \n  \"Publisher\": \"Publisher of the work\",\
+        # n  \"year_created\": \"Exact year or an educated estimate\",\n  
+        # \"ad_created\": true/false,\n  
+        # \"is_primary\": true/false,\n  
+        # \"language\": \"Original language of the work\"\n}\n\n"
+        """
+
+        response = client.responses.create(
+        model="gpt-4o-mini",
+        input=[
+            {
+            "role": "system",
+            "content": [
+                {
+                "type": "input_text",
+                "text": instructions
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "input_text",
+                "text": user_message
+                }
+            ]
+            }
+        ],
+        text={
+            "format": {
+            "type": "json_object"
+            }
+        },
+        reasoning={},
+        tools=[],
+        temperature=1,
+        max_output_tokens=2048,
+        top_p=1,
+        store=False
+        )
+
+        try:
+            ai_response = response.output[0].content[0].text
+            response_data = json.loads(ai_response)
+
+        except (AttributeError, KeyError, json.JSONDecodeError) as e:
+            logger.error("Failed to parse OpenAI response: %s", str(e))
+            return JsonResponse({"error": "Invalid format returned by OpenAI."}, status=500)
+
+
+        logger.debug("OpenAI response: %s", ai_response)
+
+        citations = response_data.get("citations", [])
+        if not citations:
+            return JsonResponse({"error": "No citations found in parsed response."}, status=400)
+
+        saved_titles = save_citations_to_neo4j(project_id, citations, current_source)
+
+        return JsonResponse({
+            "success": True,
+            "saved_citations": saved_titles
+        }, status=200)
+
+
+
+    except json.JSONDecodeError:
+        logger.error("Error parsing JSON request: %s", request.body)
+        return JsonResponse({"error": "Invalid JSON format."}, status=400)
+
+    except Exception as e:
+        logger.error("OpenAI API error: %s", str(e))
+        return JsonResponse({"error": f"OpenAI API error: {str(e)}"}, status=500)
+

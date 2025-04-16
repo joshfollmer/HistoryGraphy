@@ -16,18 +16,6 @@ window.toggleLabel = function () {
 window.populateData = function () {
     const nodeData = node.data();
 
-    function formatDate(dateString, isAD) {
-        if (!dateString) return "N/A"; // Handle empty dates
-
-        let date = new Date(dateString);
-        let year = date.getFullYear();
-        let month = date.toLocaleString('default', { month: 'long' }); // Full month name
-        let day = date.getDate();
-
-        let formattedYear = isAD ? `${year} AD` : `${Math.abs(year)} BC`; // Convert negative years to BC
-
-        return `${month} ${day}, ${formattedYear}`;
-    }
 
     // Determine if years are AD or BC
     let isADCreated = nodeData.ad_created !== false; 
@@ -36,8 +24,9 @@ window.populateData = function () {
     // Populate fields in the info panel
     document.getElementById("source-title").textContent = nodeData.label || "N/A";
     document.getElementById("source-author").textContent = nodeData.author || "N/A";
-    document.getElementById("source-date-created").textContent = formatDate(nodeData.date_created, isADCreated);
-    document.getElementById("source-date-discovered").textContent = formatDate(nodeData.date_discovered, isADDiscovered);
+    document.getElementById("source-year-created").textContent = nodeData.year_created;
+    document.getElementById("source-year-discovered").textContent = nodeData.year_discovered;
+    document.getElementById("source-publisher").textContent = nodeData.publisher || "N/A";
     document.getElementById("source-language").textContent = nodeData.language || "N/A";
 
     const linkContainer = document.getElementById("source-link");
@@ -121,9 +110,10 @@ document.getElementById('edit-button').addEventListener('click', function() {
     // Populate fields in the edit panel
     document.getElementById('edit-source-title').textContent = nodeData.label || "N/A";
     document.getElementById('edit-source-author').value = nodeData.author || "";
-    document.getElementById('edit-source-date-created').value = nodeData.date_created || "";
-    document.getElementById('edit-source-date-discovered').value = nodeData.date_discovered || "";
+    document.getElementById('edit-source-year-created').value = nodeData.year_created || "";
+    document.getElementById('edit-source-year-discovered').value = nodeData.year_discovered || "";
     document.getElementById('edit-source-language').value = nodeData.language || "";
+    document.getElementById('edit-source-publisher').value = nodeData.publisher || "";
     document.getElementById('edit-source-link').value = nodeData.url || "";
     document.getElementById('edit-source-description').value = nodeData.description || "";
     
@@ -191,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .map(node => ({
                 id: node.id(),
                 title: node.data().label,
-                date_created: node.data().date_created
+                year_created: node.data().year_created
             }));
     };
     
@@ -199,7 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Function to populate dropdown for selecting citations
     window.populateCitationsDropdown = function(dropdown, selectedContainer) {
         dropdown.innerHTML = ""; // Clear existing dropdown items
-        const dateCreated = new Date(node.data().date_created);
+        const yearCreated = node.data().year_created;
         const existingCitations = new Set(
             cy.edges().filter(edge => edge.data('source') === node.id()).map(edge => edge.data('target'))
         );
@@ -207,8 +197,8 @@ document.addEventListener("DOMContentLoaded", function () {
         availableSources.forEach(source => {
             
             
-            let testDateCreated =  new Date(source.date_created);
-            if(testDateCreated < dateCreated && !existingCitations.has(source.id)){
+            let testyearCreated =  source.year_created;
+            if(testyearCreated < yearCreated && !existingCitations.has(source.id)){
                 let option = document.createElement("div");
                 option.textContent = source.title;
                 option.dataset.id = source.id;
@@ -276,22 +266,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
     
-
-
-
-    
-
     
     document.getElementById('save-button').addEventListener('click', async function () {
         // Collect edited values
         const editedData = {
             title: document.getElementById('edit-source-title').textContent,
             author: document.getElementById('edit-source-author').value,
-            date_created: document.getElementById('edit-source-date-created').value,
-            ad_created : document.getElementById("edit-date_created-ad").checked,
-            date_discovered: document.getElementById('edit-source-date-discovered').value,
-            ad_discovered : document.getElementById("edit-date_discovered-ad").checked,
+            year_created: document.getElementById('edit-source-year-created').value,
+            ad_created : document.getElementById("edit-source-created-ad").checked,
+            year_discovered: document.getElementById('edit-source-year-discovered').value,
+            ad_discovered : document.getElementById("edit-source-discovered-ad").checked,
             language: document.getElementById('edit-source-language').value,
+            publisher: document.getElementById('edit-source-publisher').value,
             url: document.getElementById('edit-source-link').value,
             description: document.getElementById('edit-source-description').value,
             is_primary: document.getElementById('edit-primary')?.checked || false,
@@ -299,20 +285,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 .map(cite => cite.textContent.replace("✖", "").trim())
         };
 
-        
-        
-        // Convert to Date objects before comparison
-        const dateCreated = new Date(editedData.date_created);
-        const dateDiscovered = new Date(editedData.date_discovered);
-
-        
-        if (dateDiscovered < dateCreated) {
-            editedData.date_discovered = editedData.date_created;
+        if (editedData.year_discovered < editedData.year_created) {
+            editedData.year_discovered = editedData.year_created;
         }
         
-        
-        
-    
+
         try {
             // Send edit request to backend
             const response = await fetch('/edit-source/', {
@@ -329,14 +306,15 @@ document.addEventListener("DOMContentLoaded", function () {
     
             
             
-            edit_node(editedData, node.id());
+            window.location.reload();
             
     
             // Update the view panel with the new data
             document.getElementById('source-title').innerText = editedData.title;
             document.getElementById('source-author').innerText = editedData.author;
-            document.getElementById('source-date-created').innerText = editedData.date_created;
-            document.getElementById('source-date-discovered').innerText = editedData.date_discovered;
+            document.getElementById('source-year-created').innerText = editedData.year_created;
+            document.getElementById('source-year-discovered').innerText = editedData.year_discovered;
+            document.getElementById('source-publisher').innerText = editedData.publisher;
             document.getElementById('source-language').innerText = editedData.language;
             document.getElementById('source-link').innerHTML = editedData.url ? `<a href="${editedData.url}" target="_blank">${editedData.url}</a>` : "N/A";
             document.getElementById('source-description').innerText = editedData.description;
@@ -390,7 +368,6 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await response.json();
     
             if (data.success) {
-                
                 window.location.reload();  // Refresh the page after deletion
             } else {
                 alert(`Error: ${data.error}`);
@@ -398,6 +375,22 @@ document.addEventListener("DOMContentLoaded", function () {
         } catch (error) {
             console.error("Error deleting source:", error);
         }
+    });
+
+    document.getElementById("bib-button").addEventListener("click", async function() {
+        const sourceTitle = document.getElementById("edit-source-title").textContent;
+    
+        if (!sourceTitle) {
+            
+            return;
+        }
+    
+        document.getElementById('edit-source-info-panel').style.display = 'none';
+        document.getElementById('view-source-info-panel').style.display = 'none';
+        document.getElementById('bib-container').style.display = 'block';
+
+        
+        
     });
     
     

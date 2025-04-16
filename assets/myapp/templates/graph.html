@@ -25,7 +25,7 @@
 
     const edges = graphData.edges;
 
-    
+    console.log(nodes);
 
     
 </script>
@@ -51,12 +51,12 @@
         <form method="POST" id="create-node-form" action="/create-node/">
             {% csrf_token %}
             <div class="node-attribute">
-                <p>Title:</p>
+                <p><strong>Title:</strong></p>
                 <input type="text" id="node-name" name="node_name" placeholder="Enter source title">
                 <p id="node-name-error" style="color: red; display: none;">Title is required</p>
             </div>
             <div class="node-attribute">
-                <p>Source Type:</p>
+                <p><strong>Source Type:</strong></p>
                 <input type="radio" id="primary" name="source_type" value="primary" style="display:none;">
                 <label for="primary" class="node-type-primary">Primary</label>
                 <input type="radio" id="secondary" name="source_type" value="secondary" style="display:none;">
@@ -76,49 +76,68 @@
             <script src="{% static 'js/citations.js' %}">
                 
             </script>
+
+            
             <div class="node-attribute">
-                <p>Author/creator:</p>
+                <p><strong>Author/creator:</strong></p>
                 <input type="text" id="author" name="author">
             </div>
             <div class="node-attribute">
-                <p>Date created:</p>
-                <input type="date" id="date-created" name="date_created">
+                <p><strong>Year Created:</strong></p>
+                
+                <input type="text" class="year-input" id="year-created" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
+            
+                <datalist id="year-options">
+                    <!-- Year options will be added dynamically with JS -->
+                </datalist>
+            
                 <div class="era-toggle">
-                    <input type="radio" id="created-ad" name="date_created_era" value="AD" checked>
+                    <input type="radio" id="created-ad" name="year_created_era" value="AD" checked>
                     <label for="created-ad">AD</label>
-                    <input type="radio" id="created-bc" name="date_created_era" value="BC">
+                    <input type="radio" id="created-bc" name="year_created_era" value="BC">
                     <label for="created-bc">BC</label>
                 </div>
             </div>
             
+            <script src="{% static 'js/year.js' %}"></script>
+            
+            
             <div class="node-attribute">
-                <p>Date discovered:</p>
-                <input type="date" id="date-discovered" name="date_discovered">
+                <p><strong>Year Discovered:</strong></p>
+            
+                <input type="text" class="year-input" id="year-discovered" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
+            
+                <datalist id="year-options">
+                    <!-- Year options will be added dynamically with JS -->
+                </datalist>
+            
                 <div class="era-toggle">
-                    <input type="radio" id="discovered-ad" name="date_discovered_era" value="AD" checked>
+                    <input type="radio" id="discovered-ad" name="year_discovered-era" value="AD" checked>
                     <label for="discovered-ad">AD</label>
-                    <input type="radio" id="discovered-bc" name="date_discovered_era" value="BC">
+                    <input type="radio" id="discovered-bc" name="year_discovered-era" value="BC">
                     <label for="discovered-bc">BC</label>
                 </div>
             </div>
-            
-            <script>
-                // Get today's date in YYYY-MM-DD format
-                const today = new Date().toISOString().split('T')[0];
-                // Set max attribute for both date inputs
-                document.getElementById("date-created").max = today;
-                document.getElementById("date-discovered").max = today;
-            </script>
+
             <div class="node-attribute">
-                <p>Language of source:</p>
+                <p><strong>Publisher:</strong></p>
+                <input type="text" id="publisher" name="publisher">
+            </div>
+            
+            <script src="{% static 'js/year.js' %}"></script>
+            
+            <div class="node-attribute">
+                <p><strong>Language of source:</strong></p>
                 <input type="text" id="language" name="language">
             </div>
             <div class="node-attribute">
-                <p>Link to source:</p>
+                <p><strong>Link to source:</strong></p>
                 <input type="text" id="link" name="link">
             </div>
             <div class="node-attribute">
-                <p>Description:</p>
+                <p><strong>Description:</strong></p>
                 <input type="text" id="description" name="description">
             </div>
            
@@ -164,16 +183,20 @@
             <p id="source-author">N/A</p>
         </div>
 
-        <!-- Date Created Section -->
+        
         <div class="node-attribute">
-            <p><strong>Date Created:</strong></p>
-            <p id="source-date-created">N/A</p> 
+            <p><strong>year Created:</strong></p>
+            <p id="source-year-created">N/A</p> 
         </div>
 
-        <!-- Date Discovered Section -->
+        
         <div class="node-attribute">
-            <p><strong>Date Discovered:</strong></p>
-            <p id="source-date-discovered">N/A</p> 
+            <p><strong>year Discovered:</strong></p>
+            <p id="source-year-discovered">N/A</p> 
+        </div>
+        <div class="node-attribute">
+            <p><strong>Publisher:</strong></p>
+            <p id="source-publisher">N/A</p>
         </div>
 
         <div class="node-attribute">
@@ -199,9 +222,6 @@
 </div>
 
 <script>
-    
-
-
     // This function will update the UI based on the current user and the node's contributor
     function updateNodeButtons(nodeData) {
         // Check if the current user is the contributor of the node
@@ -254,7 +274,22 @@
 </script>
 
 
+<div id="bib-overlay" class="bib-overlay" style="display: none;">
+    <div class="bib-loader">
+      <p>Please wait, processing bibliography...</p>
+    </div>
+</div>
+  
 
+
+<div class="bib-container" id ="bib-container" style="display:none;">
+    <textarea class="textbox" placeholder="Enter Bibliography"></textarea>
+    <div class="button-container">
+        <button class="bib-submit" id="bib-submit">Submit</button>
+        <button class="bib-cancel" id="bib-cancel">Cancel</button>
+    </div>
+</div>
+<script src="{% static 'js/bib.js' %}"></script>
 
 <div class="source-info-panel" id="edit-source-info-panel" style="display:none;">
     <div class="source-info-header">
@@ -282,38 +317,57 @@
             </div>
             <div id="edit-selected-cites" class="edit-selected-cites"></div>
         </div>
-        
+        <div class = "buttons">
+            <input type="button" class="source-edit-bib" id="bib-button" value="Cite from Bibliography">
+        </div>
         
         <div class="node-attribute">
             <p><strong>Author/creator:</strong></p>
             <input type="text" id="edit-source-author">
         </div>
         <div class="node-attribute">
-            <p><strong>Date created:</strong></p>
-            <input type="date" id="edit-source-date-created" name="edit-source-date_created">
-            <div class="era-toggle">
-                <input type="radio" id="edit-date_created-ad" name="edit-date_created_era" value="AD" checked>
-                <label for="edit-created-ad">AD</label>
-                <input type="radio" id="edit-date_created-bc" name="edit-date_created_era" value="BC">
-                <label for="edit-created-bc">BC</label>
-            </div>
-        </div>
-        <div class="node-attribute">
-            <p><strong>Date discovered:</strong></p>
-            <input type="date" id="edit-source-date-discovered" name="edit-source-date_discovered">
-            <div class="era-toggle">
-                <input type="radio" id="edit-date_discovered-ad" name="edit-date_discovered_era" value="AD" checked>
-                <label for="edit-discovered-ad">AD</label>
-                <input type="radio" id="edit-date_discovered-bc" name="edit-date_discovered_era" value="BC">
-                <label for="edit-discovered-bc">BC</label>
-            </div>
-        </div>
-        <script>
+            <p><strong>Year Created:</strong></p>
+        
+            <input type="text" class="year-input" id="edit-source-year-created" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
             
-            // Set max attribute for both date inputs
-            document.getElementById("edit-source-date-created").max = today;
-            document.getElementById("edit-source-date-discovered").max = today;
-        </script>
+                <datalist id="year-options">
+                    <!-- Year options will be added dynamically with JS -->
+                </datalist>
+        
+            <div class="era-toggle">
+                <input type="radio" id="edit-source-created-ad" name="year_created_era" value="AD" checked>
+                <label for="created-ad">AD</label>
+                <input type="radio" id="edit-source-created-bc" name="year_created_era" value="BC">
+                <label for="created-bc">BC</label>
+            </div>
+        </div>
+        
+        <script src="{% static 'js/year.js' %}"></script>
+        <div class="node-attribute">
+            <p><strong>Year Discovered:</strong></p>
+        
+            <input type="text" class="year-input" id="edit-source-year-discovered" name="year_input" placeholder="Enter year" pattern="\d*" maxlength="4"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')" list="year-options">
+            
+                <datalist id="year-options">
+                    <!-- Year options will be added dynamically with JS -->
+                </datalist>
+        
+            <div class="era-toggle">
+                <input type="radio" id="edit-source-discovered-ad" name="year_discovered_era" value="AD" checked>
+                <label for="created-ad">AD</label>
+                <input type="radio" id="edit-source-discovered-bc" name="year_discovered_era" value="BC">
+                <label for="created-bc">BC</label>
+            </div>
+        </div>
+        
+        <script src="{% static 'js/year.js' %}"></script>
+            
+        <div class="node-attribute">
+            <p><strong>Publisher:</strong></p>
+            <input type="text" id="edit-source-publisher" name="edit-source-publisher">
+        </div>
         <div class="node-attribute">
             <p><strong>Language:</strong></p>
             <input type="text" id="edit-source-language">
