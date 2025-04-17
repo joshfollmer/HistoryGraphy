@@ -17,9 +17,6 @@ window.populateData = function () {
     const nodeData = node.data();
 
 
-    // Determine if years are AD or BC
-    let isADCreated = nodeData.ad_created !== false; 
-    let isADDiscovered = nodeData.ad_discovered !== false;
 
     // Populate fields in the info panel
     document.getElementById("source-title").textContent = nodeData.label || "N/A";
@@ -41,6 +38,7 @@ window.populateData = function () {
     // Show/hide citations field based on source types
     if (!nodeData.is_primary) {
         document.getElementById("info-cites-container").style.display = "flex";
+        document.getElementById("bib-button-container").style.display = "block"; 
 
         // Get cited nodes
         let citedNodes = node.outgoers("edge").targets();
@@ -59,6 +57,7 @@ window.populateData = function () {
         } 
     } else {
         document.getElementById("info-cites-container").style.display = "none";
+        document.getElementById("bib-button-container").style.display = "none"; 
     }
 
     // Ensure the view panel is visible
@@ -96,10 +95,12 @@ document.getElementById('close-edit-button').addEventListener('click', function(
 // Add event listeners to the labels, not the radio buttons
 document.getElementById("edit-primary-label").addEventListener("click", function () {
     document.getElementById("edit-cites-container").style.display = "none"; // Hide Cites container
+    document.getElementById("bib-button-container").style.display = "none"; 
 });
 
 document.getElementById("edit-secondary-label").addEventListener("click", function () {
     document.getElementById("edit-cites-container").style.display = "flex"; // Show Cites container
+    document.getElementById("bib-button-container").style.display = "block"; 
 });
 
 
@@ -121,11 +122,13 @@ document.getElementById('edit-button').addEventListener('click', function() {
     if (nodeData.is_primary) {
         document.getElementById('edit-primary').checked = true;
         document.getElementById("edit-cites-container").style.display = "none"; // Hide cites for primary
+        document.getElementById("bib-button-container").style.display = "none"; 
         document.getElementById('edit-primary-label').classList.add("selected");
         document.getElementById('edit-secondary-label').classList.remove("selected");
     } else {
         document.getElementById('edit-secondary').checked = true;
         document.getElementById("edit-cites-container").style.display = "flex"; // Show cites for secondary
+        document.getElementById("bib-button-container").style.display = "block"; 
         document.getElementById('edit-secondary-label').classList.add("selected");
         document.getElementById('edit-primary-label').classList.remove("selected");
     }

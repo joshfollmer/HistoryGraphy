@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const sourceTitle = nodeData.label|| "Unknown Title";
         const sourceAuthor = nodeData.author || "Unknown Author";
         const sourceYear = nodeData.date_created || "Unknown Year";
-    
         // Get the text from the input box
         const bibliographyText = document.querySelector('.textbox').value.trim();
         if (!bibliographyText) {
@@ -42,6 +41,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('bib-cancel').addEventListener('click', function() {
         document.getElementById('edit-source-info-panel').style.display = 'block';
         document.getElementById('bib-container').style.display = 'none';
+        
     });
     
 

@@ -93,6 +93,7 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 GPT_KEY = os.getenv('GPT_KEY')
 
+GOOGLE_VISION_KEY = os.getenv('GOOGLE_VISION')
 
 
 DATABASES = {

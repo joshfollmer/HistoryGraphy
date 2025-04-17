@@ -282,14 +282,41 @@
   
 
 
-<div class="bib-container" id ="bib-container" style="display:none;">
+<div class="bib-container" id="bib-container" style="display:none;">
     <textarea class="textbox" placeholder="Enter Bibliography"></textarea>
+    
+    <!-- Image Upload Button -->
+    <div class="image-upload" id = "image-upload">
+        <label for="image-input" class="upload-label">Upload Image</label>
+        <input type="file" id="image-input" accept="image/*" style="display:none;">
+    </div>
+
     <div class="button-container">
         <button class="bib-submit" id="bib-submit">Submit</button>
         <button class="bib-cancel" id="bib-cancel">Cancel</button>
     </div>
 </div>
+
 <script src="{% static 'js/bib.js' %}"></script>
+
+<div id="image-popup" class="popup" style="display:none;">
+    <div class="popup-content">
+        <canvas id="image-canvas"></canvas>
+        <div class="popup-buttons">
+            <button id="rotate-button">Rotate</button>
+            <button id="crop-button">Crop</button>
+            <button id="submit-image">Submit</button>
+            <button id="cancel-image">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+<script src="{% static 'js/image.js' %}"></script>
+
+
+
 
 <div class="source-info-panel" id="edit-source-info-panel" style="display:none;">
     <div class="source-info-header">
@@ -317,7 +344,7 @@
             </div>
             <div id="edit-selected-cites" class="edit-selected-cites"></div>
         </div>
-        <div class = "buttons">
+        <div class = "buttons" id = "bib-button-container" style="display: none;">
             <input type="button" class="source-edit-bib" id="bib-button" value="Cite from Bibliography">
         </div>
         
