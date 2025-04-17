@@ -700,3 +700,55 @@ def parse_bib(request):
         logger.error("OpenAI API error: %s", str(e))
         return JsonResponse({"error": f"OpenAI API error: {str(e)}"}, status=500)
 
+
+import requests
+
+
+
+def detect_image(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            image_data = data.get('image')
+
+            if not image_data:
+                return JsonResponse({'error': 'Invalid input'}, status=400)
+
+            # Extract base64 portion
+            image_base64 = image_data.split(',')[1]
+
+            # Construct payload for Google Vision API
+            payload = {
+                "requests": [
+                    {
+                        "image": {
+                            "content": image_base64
+                        },
+                        "features": [
+                            {
+                                "type": "TEXT_DETECTION"
+                            }
+                        ]
+                    }
+                ]
+            }
+
+            api_key = settings.GOOGLE_VISION_KEY  
+            vision_url = f"https://vision.googleapis.com/v1/images:annotate?key={api_key}"
+            response = requests.post(vision_url, json=payload)
+
+            if response.status_code != 200:
+                return JsonResponse({'error': 'Google Vision API error', 'details': response.text}, status=500)
+
+            result = response.json()
+            extracted_text = result['responses'][0].get('fullTextAnnotation', {}).get('text', '')
+
+            return JsonResponse({'success': True, 'text': extracted_text}, status=200)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    

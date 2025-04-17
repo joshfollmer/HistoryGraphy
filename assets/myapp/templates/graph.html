@@ -238,32 +238,32 @@
 
     
     document.getElementById('remove-button').addEventListener('click', function() {
-    const nodeTitle = getCurrentNodeTitle(); 
-     
+        const nodeTitle = getCurrentNodeTitle(); 
+        
 
-    fetch('/remove-source-from-project/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            title: nodeTitle,
-            project_id: projectId
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            
-        } else {
-            alert('Failed to remove node from project');
-        }
-    })
-    .catch(error => {
-        console.error('Error removing node from project:', error);
+        fetch('/remove-source-from-project/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: nodeTitle,
+                project_id: projectId
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                
+            } else {
+                alert('Failed to remove node from project');
+            }
+        })
+        .catch(error => {
+            console.error('Error removing node from project:', error);
+        });
     });
-});
 
 
     // A function to get the current node ID, should be based on your app's logic
@@ -283,7 +283,8 @@
 
 
 <div class="bib-container" id="bib-container" style="display:none;">
-    <textarea class="textbox" placeholder="Enter Bibliography"></textarea>
+    <textarea id="bib-textarea" class="textbox" placeholder="Enter Bibliography"></textarea>
+
     
     <!-- Image Upload Button -->
     <div class="image-upload" id = "image-upload">

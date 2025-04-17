@@ -34,6 +34,8 @@ urlpatterns = [
     path('delete-source/', views.delete_source, name = 'delete_source'),
     path('remove-source-from-project/', views.remove_source_from_project, name = 'remove_source_from_project'),
     path('parse-bib/', views.parse_bib, name = 'parse-bib'),
+    path('detect-image/', views.detect_image, name = 'detect-image'),
+
 ]
 
 

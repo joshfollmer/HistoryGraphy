@@ -8,6 +8,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const rotateBtn = document.getElementById('rotate-button');
     const cropBtn = document.getElementById('crop-button');
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+
+
+
     input.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -52,9 +70,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     submitBtn.addEventListener('click', () => {
         const imageData = canvas.toDataURL('image/png');
-        console.log("Send this image to your backend for OCR:", imageData);
-        popup.style.display = 'none';
+
+        fetch('/detect-image/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Required for Django if CSRF protection is on
+            },
+            body: JSON.stringify({ image: imageData})
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('OCR result:', data);
+            // Assuming this is after a successful OCR fetch
+            document.getElementById('bib-textarea').value = data.text;
+            input.value = '';
+            popup.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Error sending image:', error);
+        });
     });
+
 
     cancelBtn.addEventListener('click', () => {
         popup.style.display = 'none';
