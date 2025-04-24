@@ -71,7 +71,9 @@ def create_account_page(request):
 
 
 def sanitize_input(value):
-    return escape(value.strip()) if value else ""
+    if not value:
+        return ""
+    return value.strip()
 
 def create_account(request):
     if request.method == 'POST':
@@ -291,9 +293,7 @@ def create_node(request):
         contributor = request.user.username
         cites = data.get('selected_cites', [])
 
-        print(year_created)
-        print(year_discovered)
-
+        
         # Neo4j connection setup
         driver = get_neo4j_driver()
         session = driver.session()
@@ -459,7 +459,6 @@ def edit_source(request):
                 'new_contributor': new_contributor,
                 'new_cites': list(new_cites)
             }
-            print("Query Parameters:", params)
 
             session.run(query, params)
             session.close()
@@ -545,19 +544,18 @@ def remove_source_from_project(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-def save_citations_to_neo4j(project_id, citations, current_source):
+def save_citations_to_neo4j(project_id, citations, current_source, username):
     driver = get_neo4j_driver()
-
     query = """
     UNWIND $citations AS citation
     // Merge the cited source
     MERGE (cited:Source {title: citation.title})
     SET 
         cited.author = citation.author,
-        cited.publisher = citation.Publisher,
+        cited.publisher = citation.publisher,
         cited.year_created = citation.year_created,
         cited.year_discovered = citation.year_created,
-        cited.ad_created = citation.ad_created,
+        cited.ad_created = true,
         cited.is_primary = citation.is_primary,
         cited.language = citation.language
 
@@ -596,7 +594,9 @@ def parse_bib(request):
         user_message = data.get("message", "")
         project_id = int(data.get("projectId"))
         current_source = data.get("currentSource", "")
-        if not user_message:
+        username = data.get("username", "")
+
+        if not user_message or not username:
             return JsonResponse({"error": "No bibliography text provided."}, status=400)
 
         client = OpenAI(api_key=settings.GPT_KEY)
@@ -609,7 +609,7 @@ def parse_bib(request):
         # 2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n
         # 3. **If the same source appears multiple times in different citations, only include it once.**\n
         # 4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n
-        # 5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. If the source is from before 0 AD, keep the year positive and set ad_created to false. Most sources are going to be after 0 AD, so be VERY SURE before setting ad_created to false. You MUST provide a year, if a year is not present in the citation, make an educated guess based on other citations.**\n
+        # 5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. You MUST provide a year, if a year is not present in the citation, make an educated guess based on other citations.**\n
         # 6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\n
         # PRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\n
         # Primary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\n
@@ -628,7 +628,6 @@ def parse_bib(request):
         # \n  \"author\": \"Original author, or 'Unknown' if uncertain\",
         # \n  \"Publisher\": \"Publisher of the work\",\
         # n  \"year_created\": \"Exact year or an educated estimate\",\n  
-        # \"ad_created\": true/false,\n  
         # \"is_primary\": true/false,\n  
         # \"language\": \"Original language of the work\"\n}\n\n"
         """
@@ -683,7 +682,7 @@ def parse_bib(request):
         if not citations:
             return JsonResponse({"error": "No citations found in parsed response."}, status=400)
 
-        saved_titles = save_citations_to_neo4j(project_id, citations, current_source)
+        saved_titles = save_citations_to_neo4j(project_id, citations, current_source, username)
 
         return JsonResponse({
             "success": True,
@@ -705,50 +704,90 @@ import requests
 
 
 
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import base64
+
+def extract_text_from_paragraphs(vision_result):
+    """Extract structured text from Vision API using paragraphs to avoid broken lines."""
+    paragraphs = []
+    for page in vision_result.get('responses', [])[0].get('fullTextAnnotation', {}).get('pages', []):
+        for block in page.get('blocks', []):
+            for paragraph in block.get('paragraphs', []):
+                para_text = ''
+                for word in paragraph.get('words', []):
+                    word_text = ''.join([symbol['text'] for symbol in word.get('symbols', [])])
+                    para_text += word_text + ' '
+                paragraphs.append(para_text.strip())
+    return '\n'.join(paragraphs)
+
+
+def normalize_ocr_text(text):
+    """Remove newlines that don't follow citation-ending punctuation."""
+    lines = text.splitlines()
+    normalized = []
+    buffer = ''
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        buffer += (' ' if buffer else '') + stripped
+
+        if stripped.endswith(('.', '!', '?')):
+            normalized.append(buffer.strip())
+            buffer = ''
+
+    if buffer:
+        normalized.append(buffer.strip())
+
+    return '\n'.join(normalized)
+
+
+
 def detect_image(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            image_data = data.get('image')
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
-            if not image_data:
-                return JsonResponse({'error': 'Invalid input'}, status=400)
+    if 'image' not in request.FILES:
+        return JsonResponse({'error': 'No image uploaded'}, status=400)
 
-            # Extract base64 portion
-            image_base64 = image_data.split(',')[1]
+    try:
+        image_file: InMemoryUploadedFile = request.FILES['image']
+        image_content = image_file.read()
+        image_base64 = base64.b64encode(image_content).decode('utf-8')
 
-            # Construct payload for Google Vision API
-            payload = {
-                "requests": [
-                    {
-                        "image": {
-                            "content": image_base64
-                        },
-                        "features": [
-                            {
-                                "type": "TEXT_DETECTION"
-                            }
-                        ]
-                    }
-                ]
-            }
+        payload = {
+            "requests": [
+                {
+                    "image": {"content": image_base64},
+                    "features": [{"type": "TEXT_DETECTION"}]
+                }
+            ]
+        }
 
-            api_key = settings.GOOGLE_VISION_KEY  
-            vision_url = f"https://vision.googleapis.com/v1/images:annotate?key={api_key}"
-            response = requests.post(vision_url, json=payload)
+        api_key = settings.GOOGLE_VISION_KEY
+        vision_url = f"https://vision.googleapis.com/v1/images:annotate?key={api_key}"
 
-            if response.status_code != 200:
-                return JsonResponse({'error': 'Google Vision API error', 'details': response.text}, status=500)
+        response = requests.post(vision_url, json=payload)
 
-            result = response.json()
-            extracted_text = result['responses'][0].get('fullTextAnnotation', {}).get('text', '')
+        if response.status_code != 200:
+            return JsonResponse({
+                'error': 'Google Vision API request failed',
+                'status_code': response.status_code,
+                'details': response.text
+            }, status=500)
 
-            return JsonResponse({'success': True, 'text': extracted_text}, status=200)
+        result = response.json()
+        raw_text = extract_text_from_paragraphs(result)
+        cleaned_text = normalize_ocr_text(raw_text)
 
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+        return JsonResponse({'success': True, 'text': cleaned_text}, status=200)
 
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-
+    except Exception as e:
+        return JsonResponse({'error': 'Unexpected error', 'details': str(e)}, status=500)
     

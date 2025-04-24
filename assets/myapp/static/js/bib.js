@@ -13,15 +13,15 @@ document.addEventListener("DOMContentLoaded", function () {
     
         // Construct the message
         const message = `Current source info: Title: ${sourceTitle}, Author: ${sourceAuthor}, Date created: ${sourceYear}. Bibliography: ${bibliographyText}`;
-    
+        console.log(currentUser);
         try {
             document.getElementById('bib-overlay').style.display = 'flex';
             const response = await fetch('/parse-bib/', {
                 method: 'POST', 
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message: message, projectId: projectId, currentSource: sourceTitle }) 
+                body: JSON.stringify({ message: message, projectId: projectId, currentSource: sourceTitle, username: currentUser }) 
             });
     
             if (!response.ok) {
@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
             window.location.reload();
         } catch (error) {
             console.error("Error parsing bibliography:", error);
+            window.location.reload();
         }
     });
     

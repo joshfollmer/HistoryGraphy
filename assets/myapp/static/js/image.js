@@ -69,28 +69,40 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     submitBtn.addEventListener('click', () => {
-        const imageData = canvas.toDataURL('image/png');
-
-        fetch('/detect-image/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')  // Required for Django if CSRF protection is on
-            },
-            body: JSON.stringify({ image: imageData})
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('OCR result:', data);
-            // Assuming this is after a successful OCR fetch
-            document.getElementById('bib-textarea').value = data.text;
-            input.value = '';
-            popup.style.display = 'none';
-        })
-        .catch(error => {
-            console.error('Error sending image:', error);
-        });
+        const fileType = input.files[0]?.type || 'image/jpeg';
+        let exportFormat = 'image/jpeg';
+        let quality = 0.8;
+    
+        if (fileType === 'image/png' || fileType === 'image/webp') {
+            exportFormat = fileType;
+            quality = 1.0;
+        }
+    
+        canvas.toBlob((blob) => {
+            const formData = new FormData();
+            formData.append('image', blob, `upload.${exportFormat.split('/')[1]}`);
+    
+            fetch('/detect-image/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('OCR result:', data);
+                document.getElementById('bib-textarea').value = data.text;
+                input.value = '';
+                popup.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error sending image:', error);
+            });
+        }, exportFormat, quality);
     });
+    
+    
 
 
     cancelBtn.addEventListener('click', () => {
