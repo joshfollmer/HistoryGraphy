@@ -8,7 +8,8 @@
 {% block content %}
 <div class="banner">
     <div class="banner-content">
-        <label for="popup" class="add-node">New Node</label>
+        <label for="popup" class="banner-label">New Node</label>
+        <label id="export" class="banner-label">Export to file</label>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
@@ -26,11 +27,53 @@
     const edges = graphData.edges;
 
     console.log(nodes);
+    console.log(edges);
 
     
 </script>
 
+<script>
+    function exportGraphToGML() {
+        let gmlContent = "graph [\n";
 
+        // Add nodes
+        nodes.forEach((node) => {
+            const id = node.data.id;
+            const label = node.data.label || id;
+            const year = node.data.year_discovered || "";
+            const isPrimary = node.data.is_primary;
+            const sourceType = isPrimary ? "primary" : "secondary";
+
+            gmlContent += `  node [\n`;
+            gmlContent += `    id ${id}\n`;
+            gmlContent += `    label "${label}"\n`;
+            gmlContent += `    title "${label}"\n`;
+            gmlContent += `    year "${year}"\n`;
+            gmlContent += `    type "${sourceType}"\n`;
+            gmlContent += `  ]\n`;
+        });
+
+        // Add edges
+        edges.forEach((edge) => {
+            const source = edge.data.source;
+            const target = edge.data.target;
+            gmlContent += `  edge [\n    source ${source}\n    target ${target}\n  ]\n`;
+        });
+
+        gmlContent += "]\n";
+
+        // Trigger download
+        const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(gmlContent);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "graph-data.gml");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    document.getElementById('export').addEventListener('click', exportGraphToGML);
+</script>
 
 
 
@@ -238,32 +281,32 @@
 
     
     document.getElementById('remove-button').addEventListener('click', function() {
-    const nodeTitle = getCurrentNodeTitle(); 
-     
+        const nodeTitle = getCurrentNodeTitle(); 
+        
 
-    fetch('/remove-source-from-project/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            title: nodeTitle,
-            project_id: projectId
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            
-        } else {
-            alert('Failed to remove node from project');
-        }
-    })
-    .catch(error => {
-        console.error('Error removing node from project:', error);
+        fetch('/remove-source-from-project/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: nodeTitle,
+                project_id: projectId
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                
+            } else {
+                alert('Failed to remove node from project');
+            }
+        })
+        .catch(error => {
+            console.error('Error removing node from project:', error);
+        });
     });
-});
 
 
     // A function to get the current node ID, should be based on your app's logic
@@ -282,14 +325,42 @@
   
 
 
-<div class="bib-container" id ="bib-container" style="display:none;">
-    <textarea class="textbox" placeholder="Enter Bibliography"></textarea>
+<div class="bib-container" id="bib-container" style="display:none;">
+    <textarea id="bib-textarea" class="textbox" placeholder="Enter Bibliography"></textarea>
+
+    
+    <!-- Image Upload Button -->
+    <div class="image-upload" id = "image-upload">
+        <label for="image-input" class="upload-label">Upload Image</label>
+        <input type="file" id="image-input" accept="image/*" style="display:none;">
+    </div>
+
     <div class="button-container">
         <button class="bib-submit" id="bib-submit">Submit</button>
         <button class="bib-cancel" id="bib-cancel">Cancel</button>
     </div>
 </div>
+
 <script src="{% static 'js/bib.js' %}"></script>
+
+<div id="image-popup" class="popup" style="display:none;">
+    <div class="popup-content">
+        <canvas id="image-canvas"></canvas>
+        <div class="popup-buttons">
+            <button id="rotate-button">Rotate</button>
+            <button id="crop-button">Crop</button>
+            <button id="submit-image">Submit</button>
+            <button id="cancel-image">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.13/dist/cropper.min.js"></script>
+<script src="{% static 'js/image.js' %}"></script>
+
+
+
 
 <div class="source-info-panel" id="edit-source-info-panel" style="display:none;">
     <div class="source-info-header">
@@ -317,7 +388,7 @@
             </div>
             <div id="edit-selected-cites" class="edit-selected-cites"></div>
         </div>
-        <div class = "buttons">
+        <div class = "buttons" id = "bib-button-container" style="display: none;">
             <input type="button" class="source-edit-bib" id="bib-button" value="Cite from Bibliography">
         </div>
         

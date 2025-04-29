@@ -17,7 +17,7 @@ let minYear = earliestYear;
 
 let maxYear = Math.max(...nodes.map(node => node.data.year_discovered));
 
-const targetHeight = document.getElementById('cy').clientHeight;
+const targetHeight = document.getElementById('cy').clientHeight * 2;
 let yearRange = maxYear - minYear;
 
 if (yearRange <= 0) {

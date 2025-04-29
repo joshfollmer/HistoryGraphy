@@ -93,6 +93,7 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
 GPT_KEY = os.getenv('GPT_KEY')
 
+GOOGLE_VISION_KEY = os.getenv('GOOGLE_VISION')
 
 
 DATABASES = {
@@ -177,5 +178,5 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']
 
 
-
+DATA_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024  
 
