@@ -8,7 +8,8 @@
 {% block content %}
 <div class="banner">
     <div class="banner-content">
-        <label for="popup" class="add-node">New Node</label>
+        <label for="popup" class="banner-label">New Node</label>
+        <label id="export" class="banner-label">Export to file</label>
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
@@ -26,11 +27,53 @@
     const edges = graphData.edges;
 
     console.log(nodes);
+    console.log(edges);
 
     
 </script>
 
+<script>
+    function exportGraphToGML() {
+        let gmlContent = "graph [\n";
 
+        // Add nodes
+        nodes.forEach((node) => {
+            const id = node.data.id;
+            const label = node.data.label || id;
+            const year = node.data.year_discovered || "";
+            const isPrimary = node.data.is_primary;
+            const sourceType = isPrimary ? "primary" : "secondary";
+
+            gmlContent += `  node [\n`;
+            gmlContent += `    id ${id}\n`;
+            gmlContent += `    label "${label}"\n`;
+            gmlContent += `    title "${label}"\n`;
+            gmlContent += `    year "${year}"\n`;
+            gmlContent += `    type "${sourceType}"\n`;
+            gmlContent += `  ]\n`;
+        });
+
+        // Add edges
+        edges.forEach((edge) => {
+            const source = edge.data.source;
+            const target = edge.data.target;
+            gmlContent += `  edge [\n    source ${source}\n    target ${target}\n  ]\n`;
+        });
+
+        gmlContent += "]\n";
+
+        // Trigger download
+        const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(gmlContent);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "graph-data.gml");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    document.getElementById('export').addEventListener('click', exportGraphToGML);
+</script>
 
 
 
