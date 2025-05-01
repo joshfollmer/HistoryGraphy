@@ -307,9 +307,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error('Failed to save changes');
             }
     
+            edit_node(editedData, node.id()); // Update the node in the graph
             
             
-            window.location.reload();
             
     
             // Update the view panel with the new data
@@ -371,7 +371,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await response.json();
     
             if (data.success) {
-                window.location.reload();  // Refresh the page after deletion
+                window.location.reload(); 
             } else {
                 alert(`Error: ${data.error}`);
             }

@@ -21,19 +21,30 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message: message, projectId: projectId, currentSource: sourceTitle, username: currentUser }) 
+                body: JSON.stringify({ 
+                    message: message, 
+                    projectId: projectId, 
+                    currentSource: sourceTitle, 
+                    username: currentUser 
+                }) 
             });
     
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-    
-            console.log("Bibliography submitted successfully!");
+            const jsonResponse = await response.json();
 
-            window.location.reload();
+            if (jsonResponse.success && jsonResponse.response) {
+                const sourceId = node.id();
+                parseCitations(jsonResponse.response, sourceId);
+            } else {
+                console.error("Server returned success=False or missing response data.");
+            }
+            document.getElementById('bib-overlay').style.display = 'none';
+            //window.location.reload();
         } catch (error) {
             console.error("Error parsing bibliography:", error);
-            window.location.reload();
+            //window.location.reload();
         }
     });
     

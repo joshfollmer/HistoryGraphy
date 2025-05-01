@@ -34,6 +34,157 @@ function truncateLabel(text, maxLength = 40) {
 let node;
 const rng = new Math.seedrandom(projectId); 
 
+
+function parseCitations(data, sourceId) {
+    // allow either raw array or { citations: [...] } wrapper
+    const citations = Array.isArray(data) ? data : data.citations || [];
+  
+    citations.forEach((cit, idx) => {
+      // 1. parse the year
+      const rawYear = parseInt(cit.year_created, 10) || 0;
+      const year = cit.ad_created ? rawYear : -rawYear;
+  
+      // 2. compute positions
+      const yPosition = (year - minYear) * scaleFactor;
+      if (!yearPositions[year]) yearPositions[year] = { count: 0 };
+      const xOffset = rng() * randomXRange + yearPositions[year].count * xSpacing;
+      yearPositions[year].count += 1;
+      const xPosition = 100 + xOffset;
+  
+      // 3. make a unique node ID
+      const newNodeId = `new-${Date.now()}-${idx}`;
+  
+      // 4. add the citation node
+      cy.add({
+        group: 'nodes',
+        data: {
+          id: newNodeId,
+          label: cit.title,
+          author: cit.author,
+          publisher: cit.Publisher,
+          year_discovered: rawYear,
+          ad_discovered: cit.ad_created,
+          is_primary: cit.is_primary,
+          language: cit.language
+        },
+        position: { x: xPosition, y: yPosition }
+      }).lock();
+  
+      // 5. add an edge from the source node → this new citation
+      cy.add({
+        group: 'edges',
+        data: {
+          source: sourceId,
+          target: newNodeId
+        }
+      });
+    });
+  
+    // 6. (optional) re‐run your preset layout if you need edges to “take”
+    // cy.layout({ name: 'preset' }).run();
+  }
+
+
+
+
+function add_node(data) {
+  if (!data || !data.title || typeof data.year_discovered === 'undefined') {
+    console.error("Invalid node data:", data);
+    return;
+  }
+
+  // Year (negate if BC)
+  const year = data.ad_discovered ? +data.year_discovered : -data.year_discovered;
+
+  // Positions
+  const y = (year - minYear) * scaleFactor;
+  if (!yearPositions[year]) yearPositions[year] = { count: 0 };
+  const x = 100 + (rng() * randomXRange + yearPositions[year].count * xSpacing);
+  yearPositions[year].count += 1;
+
+  // ID (use server-generated if present, else a timestamp)
+  const id = data.id != null ? data.id.toString() : `new-${Date.now()}`;
+
+  // Add node
+  cy.add({
+    group: "nodes",
+    data: {
+      id,
+      label: data.title,
+      ...data  // spreads in author, publisher, is_primary, etc.
+    },
+    position: { x, y }
+  }).lock();
+
+  // Add edges from each cited source
+  (data.selected_cites || []).forEach(srcId =>
+    cy.add({
+      group: "edges",
+      data: { source: srcId.toString(), target: id }
+    })
+  );
+}
+
+
+
+function edit_node(data, nodeId) {
+    const node = cy.getElementById(nodeId);
+    if (!node.length) {
+      console.error("Node not found:", nodeId);
+      return;
+    }
+  
+    // Recompute year (negative if BC)
+    const rawYear = +data.year_discovered;
+    const newYear = data.ad_discovered ? rawYear : -rawYear;
+  
+    // New position
+    const yPos = (newYear - minYear) * scaleFactor;
+    const xPos = node.position('x'); // keep the old x
+  
+    // Gather new outgoing edges data
+    const newEdgeDatas = (data.selected_cites || []).map(targetId => ({
+      group: 'edges',
+      data: {
+        id: `edge-${nodeId}-${targetId}`,
+        source: nodeId,
+        target: targetId.toString()
+      }
+    }));
+  
+    // Do all mutations in one batch to avoid firing save events on every little change
+    cy.batch(() => {
+      // 1) Update node’s data and position
+      node.data({
+        ...node.data(), // preserve any fields you’re not overwriting
+        title: data.title,
+        author: data.author,
+        publisher: data.publisher,
+        year_discovered: rawYear,
+        ad_discovered: data.ad_discovered,
+        language: data.language,
+        url: data.url,
+        description: data.description,
+        is_primary: data.is_primary || false,
+        selected_cites: data.selected_cites || []
+      });
+      node.position({ x: xPos, y: yPos });
+  
+      // 2) Remove all its old outgoing edges
+      cy.remove(node.outgoers('edge'));
+  
+      // 3) Add back the new ones
+      cy.add(newEdgeDatas);
+    });
+  
+    // Lock it (just in case) and re‐layout
+    node.lock();
+    cy.layout({ name: 'preset' }).run();
+  }
+  
+  
+
+
 function init_cy() {
     
     cy = cytoscape({
