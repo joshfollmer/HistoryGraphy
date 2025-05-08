@@ -21,10 +21,10 @@
     const graphData = JSON.parse('{{ graphData|escapejs }}');
     
    
-    const nodes = graphData.nodes.filter(node => !node.data.isTimelineNode);
+    var nodes = graphData.nodes.filter(node => !node.data.isTimelineNode);
     
 
-    const edges = graphData.edges;
+    var edges = graphData.edges;
 
 
 

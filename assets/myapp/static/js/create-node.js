@@ -74,7 +74,7 @@ document.getElementById('create-node-form').addEventListener('submit', function(
     })
     .then(data => {
         console.log("Response data:", data);
-        add_node(newNode);
+        window.location.reload(); 
         loadAvailableSources();
     })
     .catch(error => {

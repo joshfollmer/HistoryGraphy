@@ -685,8 +685,9 @@ def parse_bib(request):
         # if not citations:
         #     return JsonResponse({"error": "No citations found in parsed response."}, status=400)
 
-        # #saved_titles = save_citations_to_neo4j(project_id, citations, current_source, username)
+        #saved_titles = save_citations_to_neo4j(project_id, citations, current_source, username)
 
+        # Default data for testing
         citations = [
             {
                 "title": "The e, inter de Bar in Dichon tCar, 1g in Dauschiand, 1770-1815",
@@ -717,6 +718,7 @@ def parse_bib(request):
             }
         ]
 
+        print(citations)
         return JsonResponse({
             "success": True,
             "response": citations
