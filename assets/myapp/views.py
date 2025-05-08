@@ -602,121 +602,121 @@ def parse_bib(request):
         if not user_message or not username:
             return JsonResponse({"error": "No bibliography text provided."}, status=400)
 
-        # client = OpenAI(api_key=settings.GPT_KEY)
+        client = OpenAI(api_key=settings.GPT_KEY)
 
-        # instructions = """
-        # "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
-        # \n\n
-        # ### **Parsing Rules**\n
-        # # 1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n
-        # # 2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n
-        # # 3. **If the same source appears multiple times in different citations, only include it once.**\n
-        # # 4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n
-        # # 5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. You MUST provide a year, if a year is not present in the citation, make an educated guess based on other citations.**\n
-        # # 6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\n
-        # # PRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\n
-        # # Primary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\n
-        # # It was written or published by a key participant or official during the event (e.g., a general’s war report).\n\n
-        # # It contains raw data or statistics collected in real-time.\n\nExamples of primary sources:\n\n
-        # # Les Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)\n\n
-        # # Nazi-Soviet Relations: Documents from the German Foreign Office\n\nPearl Harbor Attack: Hearings before the Joint Committee\n\n
-        # # Nazi Conspiracy and Aggression (trial documents)\n\n Secondary Source (is_primary: false) IF:\n
-        # # It is a history or analysis written after the event, even if it uses primary sources.\n\n
-        # # It is an official or scholarly history written by historians or military staff post-war.\n\nIt is published by an academic press or as part of a retrospective government series.\n\n
-        # # Make a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.\n\n\n### **Output JSON Format**\n
-        # # Each citation should be returned as a JSON object with the following fields:\n\n
-        # # ```json\n
-        # # {\n
-        # #   \"title\": \"Title of the work\",
-        # # \n  \"author\": \"Original author, or 'Unknown' if uncertain\",
-        # # \n  \"Publisher\": \"Publisher of the work\",\
-        # # n  \"year_created\": \"Exact year or an educated estimate\",\n  
-        # # \"is_primary\": true/false,\n  
-        # # \"language\": \"Original language of the work\"\n}\n\n"
-        # """
+        instructions = """
+        "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
+        \n\n
+        ### **Parsing Rules**\n
+        # 1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n
+        # 2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n
+        # 3. **If the same source appears multiple times in different citations, only include it once.**\n
+        # 4. **If any information is missing, make a reasoned approximation, but do not invent authors or incorrect details.**\n
+        # 5**Use an exact year in YYYY format for the year_created.  If the citation provides a range of years, pick one year, do not provide a range. You MUST provide a year, if a year is not present in the citation, make an educated guess based on other citations.**\n
+        # 6**You must determine if each source is primary or secondary. is_primary will be true for primary, false for secondary**\n\n
+        # PRIMARY VS. SECONDARY CLASSIFICATION RULES\nFor each citation, decide whether the source is primary or secondary using this checklist:\n\n
+        # Primary Source (is_primary: true) IF:\nThe work includes original documents (e.g. letters, interviews, speeches, transcripts).\n\nIt contains government or legal records made during the event (e.g. trial transcripts, wartime reports).\n\n
+        # It was written or published by a key participant or official during the event (e.g., a general’s war report).\n\n
+        # It contains raw data or statistics collected in real-time.\n\nExamples of primary sources:\n\n
+        # Les Lettres secrètes échangées par Hitler et Mussolini (letters between historical actors)\n\n
+        # Nazi-Soviet Relations: Documents from the German Foreign Office\n\nPearl Harbor Attack: Hearings before the Joint Committee\n\n
+        # Nazi Conspiracy and Aggression (trial documents)\n\n Secondary Source (is_primary: false) IF:\n
+        # It is a history or analysis written after the event, even if it uses primary sources.\n\n
+        # It is an official or scholarly history written by historians or military staff post-war.\n\nIt is published by an academic press or as part of a retrospective government series.\n\n
+        # Make a careful, reasoned judgment for each. When in doubt, err on the side of is_primary: false.\n\n\n### **Output JSON Format**\n
+        # Each citation should be returned as a JSON object with the following fields:\n\n
+        # ```json\n
+        # {\n
+        #   \"title\": \"Title of the work\",
+        # \n  \"author\": \"Original author, or 'Unknown' if uncertain\",
+        # \n  \"Publisher\": \"Publisher of the work\",\
+        # n  \"year_created\": \"Exact year or an educated estimate\",\n  
+        # \"is_primary\": true/false,\n  
+        # \"language\": \"Original language of the work\"\n}\n\n"
+        """
 
-        # response = client.responses.create(
-        # model="gpt-4o-mini",
-        # input=[
-        #     {
-        #     "role": "system",
-        #     "content": [
-        #         {
-        #         "type": "input_text",
-        #         "text": instructions
-        #         }
-        #     ]
-        #     },
-        #     {
-        #     "role": "user",
-        #     "content": [
-        #         {
-        #         "type": "input_text",
-        #         "text": user_message
-        #         }
-        #     ]
-        #     }
-        # ],
-        # text={
-        #     "format": {
-        #     "type": "json_object"
-        #     }
-        # },
-        # reasoning={},
-        # tools=[],
-        # temperature=1,
-        # max_output_tokens=2048,
-        # top_p=1,
-        # store=False
-        # )
+        response = client.responses.create(
+        model="gpt-4o-mini",
+        input=[
+            {
+            "role": "system",
+            "content": [
+                {
+                "type": "input_text",
+                "text": instructions
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "input_text",
+                "text": user_message
+                }
+            ]
+            }
+        ],
+        text={
+            "format": {
+            "type": "json_object"
+            }
+        },
+        reasoning={},
+        tools=[],
+        temperature=1,
+        max_output_tokens=2048,
+        top_p=1,
+        store=False
+        )
 
-        # try:
-        #     ai_response = response.output[0].content[0].text
-        #     response_data = json.loads(ai_response)
+        try:
+            ai_response = response.output[0].content[0].text
+            response_data = json.loads(ai_response)
 
-        # except (AttributeError, KeyError, json.JSONDecodeError) as e:
-        #     logger.error("Failed to parse OpenAI response: %s", str(e))
-        #     return JsonResponse({"error": "Invalid format returned by OpenAI."}, status=500)
+        except (AttributeError, KeyError, json.JSONDecodeError) as e:
+            logger.error("Failed to parse OpenAI response: %s", str(e))
+            return JsonResponse({"error": "Invalid format returned by OpenAI."}, status=500)
 
 
-        # logger.debug("OpenAI response: %s", ai_response)
+        logger.debug("OpenAI response: %s", ai_response)
 
-        # citations = response_data.get("citations", [])
-        # if not citations:
-        #     return JsonResponse({"error": "No citations found in parsed response."}, status=400)
+        citations = response_data.get("citations", [])
+        if not citations:
+            return JsonResponse({"error": "No citations found in parsed response."}, status=400)
 
         #saved_titles = save_citations_to_neo4j(project_id, citations, current_source, username)
 
         # Default data for testing
-        citations = [
-            {
-                "title": "The e, inter de Bar in Dichon tCar, 1g in Dauschiand, 1770-1815",
-                "author": "Salael",
-                "Publisher": "Munich-Vienna",
-                "year_created": "1951",
-                "ad_created": True,
-                "is_primary": False,
-                "language": "Unknown"
-            },
-            {
-                "title": "Der Höhepunkt des französischen Kultureinflussen in Österreich in der zweiten Hälfte des 18. Jahrhunderts",
-                "author": "Hans Wagner",
-                "Publisher": "Unknown",
-                "year_created": "1961",
-                "ad_created": True,
-                "is_primary": False,
-                "language": "German"
-            },
-            {
-                "title": "Der Josephinismus: Die Geschichte des Österreichischen Reform-katholizismus",
-                "author": "E. Winter",
-                "Publisher": "Vienna",
-                "year_created": "1962",
-                "ad_created": True,
-                "is_primary": False,
-                "language": "German"
-            }
-        ]
+        # citations = [
+        #     {
+        #         "title": "The e, inter de Bar in Dichon tCar, 1g in Dauschiand, 1770-1815",
+        #         "author": "Salael",
+        #         "Publisher": "Munich-Vienna",
+        #         "year_created": "1951",
+        #         "ad_created": True,
+        #         "is_primary": False,
+        #         "language": "Unknown"
+        #     },
+        #     {
+        #         "title": "Der Höhepunkt des französischen Kultureinflussen in Österreich in der zweiten Hälfte des 18. Jahrhunderts",
+        #         "author": "Hans Wagner",
+        #         "Publisher": "Unknown",
+        #         "year_created": "1961",
+        #         "ad_created": True,
+        #         "is_primary": False,
+        #         "language": "German"
+        #     },
+        #     {
+        #         "title": "Der Josephinismus: Die Geschichte des Österreichischen Reform-katholizismus",
+        #         "author": "E. Winter",
+        #         "Publisher": "Vienna",
+        #         "year_created": "1962",
+        #         "ad_created": True,
+        #         "is_primary": False,
+        #         "language": "German"
+        #     }
+        # ]
 
         print(citations)
         return JsonResponse({

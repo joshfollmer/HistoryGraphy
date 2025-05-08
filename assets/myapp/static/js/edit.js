@@ -169,35 +169,31 @@ document.getElementById('edit-button').addEventListener('click', function() {
     document.getElementById('edit-source-info-panel').style.display = 'block';
 });
 
+// Function to fetch and store all source nodes 
+window.loadAvailableSources = function() {
+    availableSources = cy.nodes()
+        .filter(node => !node.data('isTimelineNode'))  // Filter out timeline nodes
+        .map(node => ({
+            id: node.id(),
+            title: node.data().label,
+            year_created: node.data().year_created
+        }));
 
+};
 
 document.addEventListener("DOMContentLoaded", function () {
-    let availableSources = []; // Will hold all available sources
     let selectedCitations = []; // Stores selected citations for the current node
-
-    // Function to fetch and store all source nodes 
-    window.loadAvailableSources = function() {
-        availableSources = cy.nodes()
-            .filter(node => !node.data('isTimelineNode'))  // Filter out timeline nodes
-            .map(node => ({
-                id: node.id(),
-                title: node.data().label,
-                year_created: node.data().year_created
-            }));
-    };
     
-
     // Function to populate dropdown for selecting citations
     window.populateCitationsDropdown = function(dropdown, selectedContainer, node) {
+        
         dropdown.innerHTML = ""; // Clear existing dropdown items
         const yearCreated = node.data().year_created;
         const existingCitations = new Set(
             cy.edges().filter(edge => edge.data('source') === node.id()).map(edge => edge.data('target'))
         );
-        
+        console.log(availableSources);
         availableSources.forEach(source => {
-            
-            
             let testyearCreated =  source.year_created;
             if(testyearCreated < yearCreated && !existingCitations.has(source.id)){
                 let option = document.createElement("div");
@@ -305,9 +301,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!response.ok) {
                 throw new Error('Failed to save changes');
             }
-    
-            window.location.reload(); 
             
+            console.log(editedData);
+            updateNode(editedData);
+            loadAvailableSources();
             
             
     
@@ -370,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await response.json();
     
             if (data.success) {
-                window.location.reload(); 
+                deleteNode(sourceTitle); 
             } else {
                 alert(`Error: ${data.error}`);
             }
