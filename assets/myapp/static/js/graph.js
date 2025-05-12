@@ -13,11 +13,15 @@ let earliestYear = Math.min(...nodes.map(node => {
 }));
 
 
+
+
+
+
 let minYear = earliestYear; 
 
 let maxYear = Math.max(...nodes.map(node => node.data.year_discovered));
 
-const targetHeight = document.getElementById('cy').clientHeight * 2;
+const targetHeight = document.getElementById('cy').clientHeight * 3;
 let yearRange = maxYear - minYear;
 
 if (yearRange <= 0) {
@@ -33,6 +37,275 @@ function truncateLabel(text, maxLength = 40) {
 
 let node;
 const rng = new Math.seedrandom(projectId); 
+
+function deleteNode(nodeId) {
+   
+    nodes = nodes.filter(n => n.data.id !== nodeId);
+  
+    
+    edges = edges.filter(e => e.data.source !== nodeId && e.data.target !== nodeId);
+  
+    
+    yearPositions = {};
+  
+   
+    resetGraph(nodes, edges);
+  }
+
+function createNode(nodeData) {
+    
+    let year = parseInt(nodeData.year_discovered, 10) || 0;
+    if (!nodeData.ad_discovered) {
+      year = -year;
+    }
+  
+   
+    const yPos = (year - minYear) * scaleFactor;
+  
+   
+    if (!yearPositions[year]) {
+      yearPositions[year] = { count: 0 };
+    }
+    const xOff = rng() * randomXRange + yearPositions[year].count * xSpacing;
+    yearPositions[year].count++;
+    const xPos = 100 + xOff;
+  
+   
+    const nodeId = nodeData.title;
+    nodes.push({
+      group: 'nodes',
+      data: {
+        id: nodeId,
+        label: nodeData.title,
+        author: nodeData.author,
+        publisher: nodeData.publisher,
+        year_discovered: parseInt(nodeData.year_discovered, 10),
+        ad_discovered: nodeData.ad_discovered,
+        is_primary: nodeData.is_primary,
+        language: nodeData.language,
+        url: nodeData.url,
+        description: nodeData.description,
+        project_id: nodeData.project_id
+      },
+      position: { x: xPos, y: yPos }
+    });
+  
+    
+    (nodeData.selected_cites || []).forEach(citedId => {
+      edges.push({
+        group: 'edges',
+        data: {
+          source: nodeId,
+          target: citedId
+        }
+      });
+    });
+  
+   
+    resetGraph(nodes, edges);
+  }
+
+
+function resetGraph(newNodes = [], newEdges = []) {
+    if (cy) {
+      cy.destroy();
+      cy = null;
+    }
+  
+    nodes = newNodes;
+    edges = newEdges;
+    
+    yearPositions = {};
+  
+    const years = nodes.map(n => {
+      let y = n.data.year_discovered;
+      return n.data.ad_discovered === false ? -y : y;
+    });
+    earliestYear = Math.min(...years);
+    minYear      = earliestYear;
+    maxYear      = Math.max(...nodes.map(n => n.data.year_discovered));
+    yearRange    = maxYear - minYear;
+    scaleFactor  = yearRange <= 0
+      ? 100
+      : (document.getElementById('cy').clientHeight * 3) / yearRange;
+  
+    nodes.forEach(n => {
+      let y = n.data.year_discovered;
+      if (n.data.ad_discovered === false) { y = -y; }
+      let yPos = (y - minYear) * scaleFactor;
+      if (!yearPositions[y]) { yearPositions[y] = { count: 0 }; }
+      const xOff = rng() * randomXRange + yearPositions[y].count * xSpacing;
+      n.position = { x: 100 + xOff, y: yPos };
+      yearPositions[y].count++;
+    });
+  
+    init_cy();
+  }
+  
+
+
+  function parseCitations(data, sourceId) {
+    const citations = Array.isArray(data) ? data : data.citations || [];
+    const newNodes = [];
+    const newEdges = [];
+  
+    citations.forEach((cit, idx) => {
+      const year = parseInt(cit.year_created, 10) || 0;
+      const yPos = (year - minYear) * scaleFactor;
+      if (!yearPositions[year]) yearPositions[year] = { count: 0 };
+      const xOff = rng() * randomXRange + yearPositions[year].count * xSpacing;
+      yearPositions[year].count++;
+      const xPos = 100 + xOff;
+  
+      const id = cit.title;
+      // build the node object
+      newNodes.push({
+        group: 'nodes',
+        data: {
+          id,
+          label: cit.title,
+          author: cit.author,
+          publisher: cit.Publisher,
+          year_created: year,
+          year_discovered: year,
+          ad_discovered: cit.ad_created,
+          is_primary: cit.is_primary,
+          language: cit.language
+        },
+        position: { x: xPos, y: yPos }
+      });
+  
+      // build the edge object
+      newEdges.push({
+        group: 'edges',
+        data: { source: sourceId, target: id }
+      });
+    });
+  
+    // merge into globals
+    nodes = nodes.concat(newNodes);
+    edges = edges.concat(newEdges);
+  
+    // now fully rebuild the graph
+    resetGraph(nodes, edges);
+  }
+  
+
+  function updateNode(nodeData) {
+    const nodeId = nodeData.title;  // your node.id
+  
+    // 1) Remove the old node
+    nodes = nodes.filter(n => n.data.id !== nodeId);
+  
+    // 2) Remove its old outgoing edges
+    edges = edges.filter(e => e.data.source !== nodeId);
+  
+    // 3) Re‐compute layout position
+    let year = parseInt(nodeData.year_discovered, 10) || 0;
+    if (!nodeData.ad_discovered) year = -year;
+    const yPos = (year - minYear) * scaleFactor;
+  
+    if (!yearPositions[year]) yearPositions[year] = { count: 0 };
+    const xOff = rng() * randomXRange + yearPositions[year].count * xSpacing;
+    yearPositions[year].count++;
+    const xPos = 100 + xOff;
+  
+    // 4) Insert the updated node object
+    nodes.push({
+      group: 'nodes',
+      data: {
+        id: nodeId,
+        label: nodeData.title,
+        author: nodeData.author,
+        publisher: nodeData.publisher,
+        year_created: parseInt(nodeData.year_created, 10),
+        ad_created: nodeData.ad_created,
+        year_discovered: parseInt(nodeData.year_discovered, 10),
+        ad_discovered: nodeData.ad_discovered,
+        language: nodeData.language,
+        url: nodeData.url,
+        description: nodeData.description,
+        is_primary: nodeData.is_primary
+      },
+      position: { x: xPos, y: yPos }
+    });
+  
+    // 5) Re‐add its citation‐edges
+    (nodeData.selectedCites || []).forEach(targetId => {
+      edges.push({
+        group: 'edges',
+        data: { source: nodeId, target: targetId }
+      });
+    });
+  
+    // 6) Finally, rebuild the graph
+    resetGraph(nodes, edges);
+  }
+
+
+function addTimelineNodes() {
+    // Dynamically adjust timeline interval based on scaleFactor
+    let timelineInterval;
+
+    if (scaleFactor >= 100) {
+        timelineInterval = 1; 
+    }    // Extremely detailed
+    else if (scaleFactor >= 80) {
+        timelineInterval = 5;     // Very detailed
+    } else if (scaleFactor >= 40) {
+        timelineInterval = 10;    // Default
+    } else if (scaleFactor >= 20) {
+        timelineInterval = 20;    // Compressed
+    } else {
+        timelineInterval = 50;    // Very compressed
+    }
+
+    // Round startYear up to nearest interval
+    let startYear = minYear % timelineInterval === 0
+        ? minYear
+        : Math.ceil(minYear / timelineInterval) * timelineInterval;
+    startYear -= timelineInterval;  // Add buffer at top
+
+    // Add timeline nodes within the visible year range
+    for (let year = startYear; year <= maxYear+timelineInterval; year += timelineInterval) {
+        let displayYear = year < 0 ? `${Math.abs(year)} BC` : `${year} AD`;
+
+        let nodeId = `node-${year}`;
+        let rightNodeId = `node-right-${year}`;
+        let yPos = (year - minYear) * scaleFactor;
+
+        // Add timeline nodes if they don't exist yet
+        if (!cy.getElementById(nodeId).length) {
+            cy.add([
+                {
+                    group: 'nodes',
+                    data: { id: nodeId, label: displayYear, isTimelineNode: true },
+                    position: { x: -100, y: yPos }
+                },
+                {
+                    group: 'nodes',
+                    data: { id: rightNodeId, label: displayYear, isTimelineNode: true },
+                    position: { x: 5000, y: yPos }
+                },
+                {
+                    group: 'edges',
+                    data: { source: nodeId, target: rightNodeId }
+                }
+            ]);
+
+            if (year > startYear) {
+                let prevYear = year - timelineInterval;
+                let prevNodeId = `node-${prevYear}`;
+
+                cy.add({
+                    group: 'edges',
+                    data: { source: prevNodeId, target: nodeId }
+                });
+            }
+        }
+    }
+}
+
 
 function init_cy() {
     
@@ -138,73 +411,23 @@ function init_cy() {
         maxZoom: 2.0,
     });
 
-    function addTimelineNodes() {
-        // Dynamically adjust timeline interval based on scaleFactor
-        let timelineInterval;
     
-        if (scaleFactor >= 100) {
-            timelineInterval = 1; 
-        }    // Extremely detailed
-        else if (scaleFactor >= 80) {
-            timelineInterval = 5;     // Very detailed
-        } else if (scaleFactor >= 40) {
-            timelineInterval = 10;    // Default
-        } else if (scaleFactor >= 20) {
-            timelineInterval = 20;    // Compressed
-        } else {
-            timelineInterval = 50;    // Very compressed
+
+    
+    cy.on('tap', 'node', evt => {
+        const tapped = evt.target;
+        if (tapped.data('isTimelineNode')) {
+            return;
         }
-    
-        // Round startYear up to nearest interval
-        let startYear = minYear % timelineInterval === 0
-            ? minYear
-            : Math.ceil(minYear / timelineInterval) * timelineInterval;
-        startYear -= timelineInterval;  // Add buffer at top
-    
-        // Add timeline nodes within the visible year range
-        for (let year = startYear; year <= maxYear; year += timelineInterval) {
-            let displayYear = year < 0 ? `${Math.abs(year)} BC` : `${year} AD`;
-    
-            let nodeId = `node-${year}`;
-            let rightNodeId = `node-right-${year}`;
-            let yPos = (year - minYear) * scaleFactor;
-    
-            // Add timeline nodes if they don't exist yet
-            if (!cy.getElementById(nodeId).length) {
-                cy.add([
-                    {
-                        group: 'nodes',
-                        data: { id: nodeId, label: displayYear, isTimelineNode: true },
-                        position: { x: -100, y: yPos }
-                    },
-                    {
-                        group: 'nodes',
-                        data: { id: rightNodeId, label: displayYear, isTimelineNode: true },
-                        position: { x: 5000, y: yPos }
-                    },
-                    {
-                        group: 'edges',
-                        data: { source: nodeId, target: rightNodeId }
-                    }
-                ]);
-    
-                if (year > startYear) {
-                    let prevYear = year - timelineInterval;
-                    let prevNodeId = `node-${prevYear}`;
-    
-                    cy.add({
-                        group: 'edges',
-                        data: { source: prevNodeId, target: nodeId }
-                    });
-                }
-            }
-        }
-    }
-    
-    
+        populateData(tapped);
+        toggleLabel(tapped);
+        document.getElementById('source-info-popup').checked = true;
+        document.getElementById('view-source-info-panel').style.display = 'block';
+      });
+
     addTimelineNodes();
-    
-   
+    cy.nodes().forEach(n => n.lock());
+    window.loadAvailableSources();
 }
 
 
@@ -232,20 +455,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     init_cy();
 
-    // Lock nodes to prevent movement
-    cy.nodes().forEach(function(node) {
-        node.lock();
-    });
 
-    cy.on('tap', 'node', function(evt) {
-        node = evt.target;
-        if(!node.data('isTimelineNode')){
-           populateData();
-            toggleLabel();
-            document.getElementById('source-info-popup').checked = true;
-            document.getElementById('view-source-info-panel').style.display = 'block'; 
-        }
-    });
 });
 
 

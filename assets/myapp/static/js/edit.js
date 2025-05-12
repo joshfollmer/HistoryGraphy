@@ -1,5 +1,5 @@
 
-window.toggleLabel = function () {
+window.toggleLabel = function (node) {
     const primaryLabel = document.getElementById('info-primary');
     const secondaryLabel = document.getElementById('info-secondary');
 
@@ -13,11 +13,8 @@ window.toggleLabel = function () {
     }
 }
 
-window.populateData = function () {
+window.populateData = function (node) {
     const nodeData = node.data();
-
-
-
     // Populate fields in the info panel
     document.getElementById("source-title").textContent = nodeData.label || "N/A";
     document.getElementById("source-author").textContent = nodeData.author || "N/A";
@@ -107,7 +104,8 @@ document.getElementById("edit-secondary-label").addEventListener("click", functi
 
 
 document.getElementById('edit-button').addEventListener('click', function() {
-    const nodeData = cy.getElementById(document.getElementById('source-title').innerText).data();
+    const node = cy.getElementById(document.getElementById('source-title').innerText);
+    const nodeData = node.data();
     // Populate fields in the edit panel
     document.getElementById('edit-source-title').textContent = nodeData.label || "N/A";
     document.getElementById('edit-source-author').value = nodeData.author || "";
@@ -163,7 +161,7 @@ document.getElementById('edit-button').addEventListener('click', function() {
     } 
 
     const dropdown = document.getElementById("edit-cites-dropdown");
-    populateCitationsDropdown(dropdown, citesContainer);
+    populateCitationsDropdown(dropdown, citesContainer, node);
     dropdown.style = 'none;'
 
     // Show edit panel
@@ -171,35 +169,31 @@ document.getElementById('edit-button').addEventListener('click', function() {
     document.getElementById('edit-source-info-panel').style.display = 'block';
 });
 
+// Function to fetch and store all source nodes 
+window.loadAvailableSources = function() {
+    availableSources = cy.nodes()
+        .filter(node => !node.data('isTimelineNode'))  // Filter out timeline nodes
+        .map(node => ({
+            id: node.id(),
+            title: node.data().label,
+            year_created: node.data().year_created
+        }));
 
+};
 
 document.addEventListener("DOMContentLoaded", function () {
-    let availableSources = []; // Will hold all available sources
     let selectedCitations = []; // Stores selected citations for the current node
-
-    // Function to fetch and store all source nodes 
-    window.loadAvailableSources = function() {
-        availableSources = cy.nodes()
-            .filter(node => !node.data('isTimelineNode'))  // Filter out timeline nodes
-            .map(node => ({
-                id: node.id(),
-                title: node.data().label,
-                year_created: node.data().year_created
-            }));
-    };
     
-
     // Function to populate dropdown for selecting citations
-    window.populateCitationsDropdown = function(dropdown, selectedContainer) {
+    window.populateCitationsDropdown = function(dropdown, selectedContainer, node) {
+        
         dropdown.innerHTML = ""; // Clear existing dropdown items
         const yearCreated = node.data().year_created;
         const existingCitations = new Set(
             cy.edges().filter(edge => edge.data('source') === node.id()).map(edge => edge.data('target'))
         );
-        
+        console.log(availableSources);
         availableSources.forEach(source => {
-            
-            
             let testyearCreated =  source.year_created;
             if(testyearCreated < yearCreated && !existingCitations.has(source.id)){
                 let option = document.createElement("div");
@@ -254,7 +248,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (dropdown.style.display === "block") {
             dropdown.style.display = "none"; // Close if already open
         } else {
-            populateCitationsDropdown(dropdown, selectedContainer);
+            const node = cy.getElementById(document.getElementById('source-title').innerText);
+            populateCitationsDropdown(dropdown, selectedContainer, node);
             dropdown.style.display = "block"; // Open dropdown
         }
     });
@@ -306,10 +301,11 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!response.ok) {
                 throw new Error('Failed to save changes');
             }
-    
             
+            console.log(editedData);
+            updateNode(editedData);
+            loadAvailableSources();
             
-            window.location.reload();
             
     
             // Update the view panel with the new data
@@ -371,7 +367,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await response.json();
     
             if (data.success) {
-                window.location.reload();  // Refresh the page after deletion
+                deleteNode(sourceTitle); 
             } else {
                 alert(`Error: ${data.error}`);
             }

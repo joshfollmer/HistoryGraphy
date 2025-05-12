@@ -16,6 +16,9 @@ from django.http import JsonResponse
 from django.utils.html import escape
 from openai import OpenAI
 import logging
+import requests
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import base64
 
 
 def get_supabase_client() -> Client:
@@ -602,8 +605,7 @@ def parse_bib(request):
         client = OpenAI(api_key=settings.GPT_KEY)
 
         instructions = """
-        "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.
-        \n\n
+        "You are a tool that parses historical bibliographic citations. You will be provided with the source that is doing the citing, followed by a list of citations. Your task is to extract key bibliographic details from each citation.\n
         ### **Parsing Rules**\n
         # 1. **Ignore irrelevant text** (such as page numbers, chapter titles, and section numbers).\n
         # 2. **If the input does not contain any citations, return:** `\"Invalid format\"`.\n
@@ -626,45 +628,45 @@ def parse_bib(request):
         # {\n
         #   \"title\": \"Title of the work\",
         # \n  \"author\": \"Original author, or 'Unknown' if uncertain\",
-        # \n  \"Publisher\": \"Publisher of the work\",\
-        # n  \"year_created\": \"Exact year or an educated estimate\",\n  
+        # \n  \"Publisher\": \"Publisher of the work\",
+        #   \"year_created\": \"Exact year or an educated estimate\",\n  
         # \"is_primary\": true/false,\n  
         # \"language\": \"Original language of the work\"\n}\n\n"
         """
 
         response = client.responses.create(
-        model="gpt-4o-mini",
-        input=[
-            {
-            "role": "system",
-            "content": [
+            model="gpt-4o-mini",
+            input=[
                 {
-                "type": "input_text",
-                "text": instructions
+                "role": "system",
+                "content": [
+                    {
+                    "type": "input_text",
+                    "text": instructions
+                    }
+                ]
+                },
+                {
+                "role": "user",
+                "content": [
+                    {
+                    "type": "input_text",
+                    "text": user_message
+                    }
+                ]
                 }
-            ]
+            ],
+            text={
+                "format": {
+                "type": "json_object"
+                }
             },
-            {
-            "role": "user",
-            "content": [
-                {
-                "type": "input_text",
-                "text": user_message
-                }
-            ]
-            }
-        ],
-        text={
-            "format": {
-            "type": "json_object"
-            }
-        },
-        reasoning={},
-        tools=[],
-        temperature=1,
-        max_output_tokens=2048,
-        top_p=1,
-        store=False
+            reasoning={},
+            tools=[],
+            temperature=1,
+            max_output_tokens=2048,
+            top_p=1,
+            store=False
         )
 
         try:
@@ -682,11 +684,43 @@ def parse_bib(request):
         if not citations:
             return JsonResponse({"error": "No citations found in parsed response."}, status=400)
 
-        saved_titles = save_citations_to_neo4j(project_id, citations, current_source, username)
+        save_citations_to_neo4j(project_id, citations, current_source, username)
 
+        # Default data for testing
+        # citations = [
+        #     {
+        #         "title": "The e, inter de Bar in Dichon tCar, 1g in Dauschiand, 1770-1815",
+        #         "author": "Salael",
+        #         "Publisher": "Munich-Vienna",
+        #         "year_created": "1951",
+        #         "ad_created": True,
+        #         "is_primary": False,
+        #         "language": "Unknown"
+        #     },
+        #     {
+        #         "title": "Der Höhepunkt des französischen Kultureinflussen in Österreich in der zweiten Hälfte des 18. Jahrhunderts",
+        #         "author": "Hans Wagner",
+        #         "Publisher": "Unknown",
+        #         "year_created": "1961",
+        #         "ad_created": True,
+        #         "is_primary": False,
+        #         "language": "German"
+        #     },
+        #     {
+        #         "title": "Der Josephinismus: Die Geschichte des Österreichischen Reform-katholizismus",
+        #         "author": "E. Winter",
+        #         "Publisher": "Vienna",
+        #         "year_created": "1962",
+        #         "ad_created": True,
+        #         "is_primary": False,
+        #         "language": "German"
+        #     }
+        # ]
+
+        
         return JsonResponse({
             "success": True,
-            "saved_citations": saved_titles
+            "response": citations
         }, status=200)
 
 
@@ -700,16 +734,7 @@ def parse_bib(request):
         return JsonResponse({"error": f"OpenAI API error: {str(e)}"}, status=500)
 
 
-import requests
 
-
-
-
-
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.core.files.uploadedfile import InMemoryUploadedFile
-import base64
 
 def extract_text_from_paragraphs(vision_result):
     """Extract structured text from Vision API using paragraphs to avoid broken lines."""
