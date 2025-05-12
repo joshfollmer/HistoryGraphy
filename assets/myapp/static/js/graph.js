@@ -21,7 +21,7 @@ let minYear = earliestYear;
 
 let maxYear = Math.max(...nodes.map(node => node.data.year_discovered));
 
-const targetHeight = document.getElementById('cy').clientHeight * 2;
+const targetHeight = document.getElementById('cy').clientHeight * 3;
 let yearRange = maxYear - minYear;
 
 if (yearRange <= 0) {
@@ -127,7 +127,7 @@ function resetGraph(newNodes = [], newEdges = []) {
     yearRange    = maxYear - minYear;
     scaleFactor  = yearRange <= 0
       ? 100
-      : (document.getElementById('cy').clientHeight * 2) / yearRange;
+      : (document.getElementById('cy').clientHeight * 3) / yearRange;
   
     nodes.forEach(n => {
       let y = n.data.year_discovered;
@@ -411,16 +411,14 @@ function init_cy() {
         maxZoom: 2.0,
     });
 
-
-
-   
     
-    
-    cy.nodes().forEach(n => n.lock());
 
     
     cy.on('tap', 'node', evt => {
         const tapped = evt.target;
+        if (tapped.data('isTimelineNode')) {
+            return;
+        }
         populateData(tapped);
         toggleLabel(tapped);
         document.getElementById('source-info-popup').checked = true;
@@ -428,6 +426,7 @@ function init_cy() {
       });
 
     addTimelineNodes();
+    cy.nodes().forEach(n => n.lock());
     window.loadAvailableSources();
 }
 
